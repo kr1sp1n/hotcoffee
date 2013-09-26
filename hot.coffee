@@ -3,9 +3,9 @@ URL = require 'url'
 qs = require 'querystring'
 fs = require 'fs'
 
-args = {}
 
 # parse args
+args = {}
 process.argv.slice(2).map (a)-> args[a.split('=')[0]] = a.split('=')[1]
 
 port = args.port or 1337
@@ -31,10 +31,7 @@ process.on 'SIGINT', ->
   process.exit(0)
 
 isRoot = (url)-> url == '/'
-
-onExit = ->
-  writeDb()
-
+onExit = -> writeDb()
 writeDb = -> fs.writeFileSync(file, JSON.stringify(db)) if file
 
 merge = (dest, source)->
@@ -43,8 +40,7 @@ merge = (dest, source)->
   for key, value of source
     dest[key] = source[key]
 
-writeHead = (res)->
-  res.writeHead 200, {'Content-Type': 'application/json'}
+writeHead = (res)-> res.writeHead 200, {'Content-Type': 'application/json'}
 
 parseURL = (url)->
   x = URL.parse(url).pathname.split('/')
@@ -66,7 +62,7 @@ onGET = (req, res)->
       name
   else
     result = db[resource] ?= []
-    result = result.filter((x) -> x[key]?) if key?
+    result = result.filter((x) -> x[key]?) if key? and key.length > 0
     result = result.filter((x) -> x[key] == value) if value?
 
   render res, result
