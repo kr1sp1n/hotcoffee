@@ -1,0 +1,22 @@
+{
+  "name": "hotcoffee",
+  "version": "0.0.1",
+  "description": "RESTful server",
+  "main": "hot.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kr1sp1n/hotcoffee.git"
+  },
+  "keywords": [
+    "rest",
+    "server",
+    "simple"
+  ],
+  "author": "kr1sp1n",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e"
+}
