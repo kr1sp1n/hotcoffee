@@ -40,7 +40,11 @@ merge = (dest, source)->
   for key, value of source
     dest[key] = source[key]
 
-writeHead = (res)-> res.writeHead 200, {'Content-Type': 'application/json'}
+writeHead = (res)-> 
+  res.writeHead 200, {
+    'Content-Type': 'application/json'
+    'Access-Control-Allow-Origin': '*'
+  }
 
 parseURL = (url)->
   x = URL.parse(url).pathname.split('/')
