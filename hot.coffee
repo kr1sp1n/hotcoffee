@@ -72,7 +72,7 @@ onPOST = (req, res)->
   db[resource] ?= []
   parseBody req, (err, body)->
     console.log err if err?
-    db[resource].push body
+    db[resource].push body if resource != ""
     render res, body
 
 onPATCH = (req, res)->
@@ -99,20 +99,44 @@ onDELETE = (req, res)->
     db[resource] = db[resource].filter((x) -> (x[key] != value) or (!result.push x))
   render res, result
 
+onHEAD = (req, res)->
+  [ resource, key, value ] = parseURL req.url
+  result = [] # resource keys
+  render res, result
+
 render = (res, result)->
+  output = ""
+  # unless result
+  #   console.log "OUTPUT"
+  #   out = result.map (item)->
+  #     console.log item
+  #     Object.keys(item).map((key)-> item[key]).join("\t")
+
+  #   console.log out
+
+  #   res.end out.join("\n") + "\n"
+  # else
+  #   res.end "\n"
+
+  # console.log res
+
+  # res.end()
   res.end JSON.stringify(result, null, 2) + '\n'
 
 onRequest = (req, res)->
+
   writeHead res
-  switch req.method
+  method = req.method.toUpperCase()
+
+  switch method
     when "GET" then onGET req, res
     when "POST" then onPOST req, res
     when "PUT" then console.log "PUT"
     when "PATCH" then onPATCH req, res
     when "DELETE" then onDELETE req, res
+    when "HEAD" then onHEAD req, res
     else
       res.end 'Hello World\n'
-
 
 server = http.createServer onRequest
 server.listen port, host
