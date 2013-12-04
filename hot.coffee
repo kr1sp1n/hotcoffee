@@ -142,6 +142,6 @@ onRequest = (req, res)->
       res.end 'Hello World\n'
 
 server = http.createServer onRequest
-server.listen port, host
-console.log "Server running at http://#{host}:#{port}/"
+server.listen port
+# console.log "Server running at http://#{host}:#{port}/"
 console.log "with db file #{file}" if file
