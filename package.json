@@ -10,6 +10,10 @@
     "type": "git",
     "url": "git://github.com/kr1sp1n/hotcoffee.git"
   },
+  "engines": {
+    "node": "0.10.x",
+    "npm": "1.2.x"
+  },
   "keywords": [
     "rest",
     "server",
@@ -18,5 +22,8 @@
   "author": "kr1sp1n",
   "license": "BSD",
   "readmeFilename": "README.md",
-  "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e"
+  "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e",
+  "dependencies": {
+    "coffee-script": "~1.6.3"
+  }
 }

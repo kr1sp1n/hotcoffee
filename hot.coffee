@@ -3,12 +3,11 @@ URL = require 'url'
 qs = require 'querystring'
 fs = require 'fs'
 
-
 # parse args
 args = {}
 process.argv.slice(2).map (a)-> args[a.split('=')[0]] = a.split('=')[1]
 
-port = args.port or 1337
+port = process.env.PORT or args.port or 1337
 host = args.host or '127.0.0.1'
 file = false or args.file
 
