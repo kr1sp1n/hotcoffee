@@ -60,13 +60,15 @@ parseBody = (req, done)->
 
 onGET = (req, res)->
   [ resource, key, value ] = parseURL req.url
+  result = []
   if isRoot req.url
     result = for name, val of db
       name
   else
-    result = db[resource] ?= []
-    result = result.filter((x) -> x[key]?) if key? and key.length > 0
-    result = result.filter((x) -> x[key] == value) if value?
+    if db[resource]?
+      result = db[resource]
+      result = result.filter((x) -> x[key]?) if key? and key.length > 0
+      result = result.filter((x) -> x[key] == value) if value?
 
   render res, result
 
@@ -143,5 +145,5 @@ onRequest = (req, res)->
 
 server = http.createServer onRequest
 server.listen port
-# console.log "Server running at http://#{host}:#{port}/"
+console.log "HTTP Server listening on port #{port}"
 console.log "with db file #{file}" if file
