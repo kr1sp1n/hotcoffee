@@ -8,7 +8,7 @@ args = {}
 process.argv.slice(2).map (a)-> args[a.split('=')[0]] = a.split('=')[1]
 
 port = process.env.PORT or args.port or 1337
-host = args.host or '127.0.0.1'
+host = args.host or 'localhost'
 file = false or args.file
 
 db = {}
