@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>HOT COFFEE</title>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript">
+
+      var handleResponse = function(data){
+        console.log(data);
+      }
+
+      $.getJSON("http://localhost:1337/", handleResponse)
+
+    </script>
+	</head>
+  <body>
+    
+  </body>
+</html>
