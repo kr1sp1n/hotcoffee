@@ -10,24 +10,31 @@ class Hotcoffee extends EventEmitter
       @config = @parseArgs()
     @port = process.env.PORT or @config.port or 1337
     @host = @config.host or 'localhost'
-    @file = false or @config.file
+    @file = false
+    @file = @config.file if @config?.file?
     @db = {}
-    process.on 'exit', => @onExit()
-
+    @plugins = {}
+    process.on 'exit', =>
+      @onExit()
     process.on 'SIGINT', =>
       @onExit()
       process.exit(0)
-
-    if @file?
-      unless fs.existsSync(file)
-        console.error "File #{file} does not exist."
+    if @file
+      unless fs.existsSync(@file)
+        console.error "File #{@file} does not exist."
         process.exit(1)
       try
-        @db = require file
+        @db = require @file
       catch error
-        console.error "File #{file} is invalid JSON."
+        console.error "File #{@file} is invalid JSON."
         process.exit(1)
 
+  # plugins
+  use: (fn, opts)=>
+    @emit 'use', fn, opts
+    plugin = fn @, opts
+    @plugins[plugin.name] = plugin
+    return @
 
   parseArgs: ->
     args = {}
@@ -35,7 +42,11 @@ class Hotcoffee extends EventEmitter
     return args
 
   isRoot: (url)-> url == '/'
-  onExit: -> @writeDb()
+
+  onExit: ->
+    @emit 'exit'
+    @writeDb()
+
   writeDb: -> fs.writeFileSync(@file, JSON.stringify(@db)) if @file
 
   merge: (dest, source)->
@@ -63,6 +74,7 @@ class Hotcoffee extends EventEmitter
       done null, body
 
   onGET: (req, res)->
+    @emit 'GET', req, res
     [ resource, key, value ] = @parseURL req.url
     result = []
     if @isRoot req.url
@@ -76,6 +88,7 @@ class Hotcoffee extends EventEmitter
     @render res, result
 
   onPOST: (req, res)->
+    @emit 'POST', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     @parseBody req, (err, body)=>
@@ -84,6 +97,7 @@ class Hotcoffee extends EventEmitter
       @render res, body
 
   onPATCH: (req, res)->
+    @emit 'PATCH', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     result = @db[resource]
@@ -95,6 +109,7 @@ class Hotcoffee extends EventEmitter
       @render res, result
 
   onDELETE: (req, res)->
+    @emit 'DELETE', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     result = [] # deleted items
@@ -108,14 +123,17 @@ class Hotcoffee extends EventEmitter
     @render res, result
 
   onHEAD: (req, res)->
+    @emit 'HEAD', req, res
     [ resource, key, value ] = @parseURL req.url
     result = [] # resource keys
     @render res, result
 
   render: (res, result)->
+    @emit 'render', res, result
     res.end JSON.stringify(result, null, 2) + '\n'
 
   onRequest: (req, res)->
+    @emit 'request', req, res
     @writeHead res
     method = req.method.toUpperCase()
 
@@ -130,15 +148,21 @@ class Hotcoffee extends EventEmitter
         res.end 'Hello World\n'
 
   start: ->
+    @emit 'start'
     @server = http.createServer @onRequest.bind @
     @server.listen @port
     console.log "HTTP Server listening on port #{@port}"
     console.log "with db file #{@file}" if @file
+    return @
+
+  stop: ->
+    @emit 'stop'
+    @server.close()
+    return @
 
 module.exports = (config)->
   return new Hotcoffee config
 
-
-unless module.parents?
+unless module.parent?
   s = new Hotcoffee()
   s.start()

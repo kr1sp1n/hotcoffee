@@ -78,8 +78,8 @@
             controller:'ListCtrl',
             templateUrl:'lists.html'
           })
-          .when('/items', {
-            controller: 'ItemController',
+          .when('/items/:listName', {
+            controller: 'ItemCtrl',
             templateUrl: 'items.html'
           })
           .otherwise({
@@ -87,16 +87,15 @@
           });
       })
       .controller('ListCtrl', function($scope, Restangular) {
-        var List = Restangular.all('');
-        var Item = 
-        $scope.lists = List.getList().$object;
-        // $scope.getItems = function(listName) {
-        //   return Restangular.all(listName).getList().$object;
-        // }
+        var all = Restangular.all('');
+        $scope.lists = all.getList().$object;
       })
-      .controller('ItemCtrl', function($scope, Restangular) {
-        $scope.list = {
-          name: 'XXX'
+      .controller('ItemCtrl', function($scope, Restangular, $routeParams) {
+        $scope.listName = ''
+        if($routeParams['listName']) {
+          $scope.listName = $routeParams.listName;
+          var Items = Restangular.all($scope.listName);
+          $scope.items = Items.getList().$object;
         }
       })
       ;
@@ -107,14 +106,18 @@
         <h2>All Lists</h2>
         <ul class="list">
           <li ng-repeat="name in lists">
-            <a href="#" ng-click="getItems(name)">{{name}}</a>
+            <a href="#/items/{{name}}">{{name}}</a>
           </li>
         <ul>
       <div>
     </script>
     <script type="text/ng-template" id="items.html">
       <div>
-        <h3>{{list.name}}</h3>
+        <h2>{{listName}}</h2>
+        <ul class="list">
+          <li ng-repeat="item in items">
+          <a href="#/items">{{item.name}}</a>
+          </li>
       </div>
     </script>
 	</head>

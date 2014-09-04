@@ -1,7 +1,7 @@
 {
   "name": "hotcoffee",
   "version": "0.0.1",
-  "description": "Save anything through a REST interface",
+  "description": "Brew you some hot micro servers",
   "main": "hot.coffee",
   "scripts": {
     "test": "make test"
@@ -16,8 +16,10 @@
   },
   "keywords": [
     "rest",
+    "api",
     "server",
-    "simple"
+    "simple",
+    "notepad"
   ],
   "author": "kr1sp1n",
   "license": "BSD",
