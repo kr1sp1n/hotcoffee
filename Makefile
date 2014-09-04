@@ -20,3 +20,6 @@ test-watch:
 
 cov:
 	$(MOCHA_BIN) $(TEST_UNIT_DIR) -R mocha-spec-cov-alt
+
+cov-html:
+	$(MOCHA_BIN) $(TEST_UNIT_DIR) -R html-cov > ./cov.html
