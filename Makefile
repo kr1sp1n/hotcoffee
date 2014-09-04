@@ -15,4 +15,8 @@ test: test-unit
 test-unit: $(MOCHA_BIN)
 	$(MOCHA_BIN) --growl --reporter $(MOCHA_REPORTER) --compilers coffee:coffee-script/register --colors $(TEST_UNIT_DIR)
 
-$(MOCHA_BIN): install
+test-watch:
+	$(MOCHA_BIN) --growl --reporter $(MOCHA_REPORTER) --watch --compilers coffee:coffee-script/register --colors $(TEST_UNIT_DIR)
+
+cov:
+	$(MOCHA_BIN) $(TEST_UNIT_DIR) -R mocha-spec-cov-alt

@@ -5,7 +5,10 @@ fs = require 'fs'
 EventEmitter = require('events').EventEmitter
 
 class Hotcoffee extends EventEmitter
-  constructor: (@config)->
+  constructor: (config)->
+    @init config
+
+  init: (@config, done)->
     unless @config?
       @config = @parseArgs()
     @port = process.env.PORT or @config.port or 1337
@@ -29,11 +32,14 @@ class Hotcoffee extends EventEmitter
         console.error "File #{@file} is invalid JSON."
         process.exit(1)
 
+    @emit 'init', @config
+    return done(null) if done?
+
   # plugins
   use: (fn, opts)=>
-    @emit 'use', fn, opts
     plugin = fn @, opts
     @plugins[plugin.name] = plugin
+    @emit 'use', fn, opts
     return @
 
   parseArgs: ->

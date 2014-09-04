@@ -29,6 +29,23 @@
     "coffee-script": "~1.6.3"
   },
   "devDependencies": {
-    "mocha": "^1.21.4"
+    "mocha": "^1.21.4",
+    "should": "3.1.4",
+    "blanket": "1.1.6",
+    "mocha-spec-cov-alt": "0.1.1"
+  },
+  "config": {
+    "blanket": {
+      "pattern": [
+        "hot.coffee"
+      ],
+      "loader": "./node-loaders/coffee-script",
+      "data-cover-never": [
+        "node_modules"
+      ],
+      "spec-cov": {
+        "threshold": 100
+      }
+    }
   }
 }
