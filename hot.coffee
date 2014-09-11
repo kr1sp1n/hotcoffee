@@ -6,32 +6,23 @@ EventEmitter = require('events').EventEmitter
 
 class Hotcoffee extends EventEmitter
   constructor: (config)->
+    process.setMaxListeners 0
+    @methods = 
+      'get': @onGET.bind @
+      'post': @onPOST.bind @
+      'patch': @onPATCH.bind @
+      'delete': @onDELETE.bind @
+      'head': @onHEAD.bind @
+
     @init config
 
-  init: (@config, done)->
-    unless @config?
-      @config = @parseArgs()
-    @port = process.env.PORT or @config.port or 1337
-    @host = @config.host or 'localhost'
-    @file = false
-    @file = @config.file if @config?.file?
-    @db = {}
-    @plugins = {}
-    process.on 'exit', =>
-      @onExit()
-    process.on 'SIGINT', =>
-      @onExit()
-      process.exit(0)
-    if @file
-      unless fs.existsSync(@file)
-        console.error "File #{@file} does not exist."
-        process.exit(1)
-      try
-        @db = require @file
-      catch error
-        console.error "File #{@file} is invalid JSON."
-        process.exit(1)
-
+  init: (@config={}, done)->
+    @config.port = process.env.PORT or @config?.port or 1337
+    @config.host = @config?.host or 'localhost'
+    @db = {} # in-memory db
+    @plugins = {} # list of plugins
+    process.once 'exit', @onExit.bind @
+    process.once 'SIGINT', @onSIGINT.bind @
     @emit 'init', @config
     return done(null) if done?
 
@@ -42,18 +33,13 @@ class Hotcoffee extends EventEmitter
     @emit 'use', fn, opts
     return @
 
-  parseArgs: ->
-    args = {}
-    process.argv.slice(2).map (a)-> args[a.split('=')[0]] = a.split('=')[1]
-    return args
-
   isRoot: (url)-> url == '/'
 
-  onExit: ->
-    @emit 'exit'
-    @writeDb()
+  onExit: -> @emit 'exit'
 
-  writeDb: -> fs.writeFileSync(@file, JSON.stringify(@db)) if @file
+  onSIGINT: ->
+    @onExit()
+    process.exit(0)
 
   merge: (dest, source)->
     for key, value of dest
@@ -84,38 +70,37 @@ class Hotcoffee extends EventEmitter
     [ resource, key, value ] = @parseURL req.url
     result = []
     if @isRoot req.url
-      result = for name, val of @db
-        name
+      result = (name for name, val of @db)
     else
       if @db[resource]?
         result = @db[resource]
         result = result.filter((x) -> x[key]?) if key? and key.length > 0
-        result = result.filter((x) -> x[key] == value) if value?
+        result = result.filter((x) -> String(x[key]) == String(value)) if value?
     @render res, result
 
   onPOST: (req, res)->
-    @emit 'POST', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     @parseBody req, (err, body)=>
       console.log err if err?
-      @db[resource].push body if resource != ""
+      if resource != ""
+        @db[resource].push body
+        @emit 'POST', resource, body
       @render res, body
 
   onPATCH: (req, res)->
-    @emit 'PATCH', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     result = @db[resource]
     result = result.filter((x) -> x[key]?) if key?
-    result = result.filter((x) -> x[key] == value) if value?
-    @parseBody req, (err, body)->
+    result = result.filter((x) -> String(x[key]) == String(value)) if value?
+    @parseBody req, (err, body)=>
       console.log err if err?
       @merge k, body for k in result
+      @emit 'PATCH', resource, result, body
       @render res, result
 
   onDELETE: (req, res)->
-    @emit 'DELETE', req, res
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     result = [] # deleted items
@@ -125,7 +110,8 @@ class Hotcoffee extends EventEmitter
       delete @db[resource]
     else
       # delete items
-      @db[resource] = @db[resource].filter((x) -> (x[key] != value) or (!result.push x))
+      @db[resource] = @db[resource].filter((x) -> (String(x[key]) != String(value)) or (!result.push x))
+    @emit 'DELETE', resource, result
     @render res, result
 
   onHEAD: (req, res)->
@@ -141,24 +127,17 @@ class Hotcoffee extends EventEmitter
   onRequest: (req, res)->
     @emit 'request', req, res
     @writeHead res
-    method = req.method.toUpperCase()
-
-    switch method
-      when "GET" then @onGET req, res
-      when "POST" then @onPOST req, res
-      when "PUT" then console.log "PUT"
-      when "PATCH" then @onPATCH req, res
-      when "DELETE" then @onDELETE req, res
-      when "HEAD" then @onHEAD req, res
-      else
-        res.end 'Hello World\n'
+    method = req.method.toLowerCase()
+    if @methods[method]?
+      @methods[method] req, res
+    else
+      res.end 'Method not supported.\n'
 
   start: ->
     @emit 'start'
     @server = http.createServer @onRequest.bind @
-    @server.listen @port
-    console.log "HTTP Server listening on port #{@port}"
-    console.log "with db file #{@file}" if @file
+    @server.listen @config.port
+    console.log "HTTP Server listening on port #{@config.port}"
     return @
 
   stop: ->
@@ -169,6 +148,3 @@ class Hotcoffee extends EventEmitter
 module.exports = (config)->
   return new Hotcoffee config
 
-unless module.parent?
-  s = new Hotcoffee()
-  s.start()

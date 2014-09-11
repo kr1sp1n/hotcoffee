@@ -4,7 +4,7 @@ app = require("#{__dirname}/../hot")()
 
 plugin = (app, config)->
   # react on app events
-  app.on 'start', ->
+  app.on 'start', (next)->
     console.log app
     console.log 'App started!'
 
