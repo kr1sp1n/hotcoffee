@@ -40,11 +40,12 @@
   "config": {
     "blanket": {
       "pattern": [
-        "hot.coffee"
+        "src"
       ],
       "loader": "./node-loaders/coffee-script",
       "data-cover-never": [
-        "node_modules"
+        "node_modules",
+        "test"
       ],
       "spec-cov": {
         "threshold": 100

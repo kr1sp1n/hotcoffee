@@ -4,15 +4,20 @@ should = require 'should'
 sinon = require 'sinon'
 EventEmitter = require('events').EventEmitter
 
+toOutput = (obj)->
+  JSON.stringify(obj, null, 2) + '\n'
+
 describe 'HotCoffee', ->
   beforeEach ->
     @req = new EventEmitter()
     @req.url = "/turtles/name/Donatello"
+    @req.end = sinon.stub()
+
     @res =
       end: sinon.stub()
       writeHead: sinon.stub()
 
-    @hotcoffee = require("#{__dirname}/../../hot")()
+    @hotcoffee = require("#{__dirname}/../../src/hot")()
     @plugin = (app, opts)=>
       return name: 'Superplugin', opts: opts
 
@@ -136,6 +141,15 @@ describe 'HotCoffee', ->
 
   describe 'onGET(req, res)', ->
 
+    beforeEach ->
+      @hotcoffee.db = 
+        resource1: [
+          id: 1
+          id: 2, name: 'hello'
+          id: 3, name: 'world'
+        ]
+        resource2: []
+
     it 'should emit a "GET" event with req and res', (done)->
       @hotcoffee.on 'GET', (req, res)=>
         req.url.should.equal @req.url
@@ -143,17 +157,56 @@ describe 'HotCoffee', ->
         done null
       @hotcoffee.onGET @req, @res
 
+    it 'should response all items of a resource type', ->
+      resource = 'resource1'
+      output = toOutput @hotcoffee.db[resource]
+      @req.url = '/' + resource
+      @hotcoffee.onGET @req, @res
+      @res.end.calledOnce.should.be.ok
+      @res.end.calledWith(output).should.be.ok
+
+    it 'should response items that have a specific property', ->
+      resource = 'resource1'
+      property = 'name'
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> x[property]?)
+      @req.url = "/#{resource}/#{property}"
+      @hotcoffee.onGET @req, @res
+      @res.end.calledOnce.should.be.ok
+      @res.end.calledWith(output).should.be.ok
+
+    it 'should response items that match a specific value of a property', ->
+      resource = 'resource1'
+      property = 'name'
+      value = 'hello'
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[property])==String(value))
+      @req.url = "/#{resource}/#{property}/#{value}"
+      @hotcoffee.onGET @req, @res
+      @res.end.calledOnce.should.be.ok
+      @res.end.calledWith(output).should.be.ok
+
     it 'should populate all resources if req.url == "/"', ->
-      # populate a resource list
-      @hotcoffee.db = 
-        resource1: []
-        resource2: []
-      result = (name for name, val of @hotcoffee.db)
-      output = JSON.stringify(result, null, 2) + '\n'
+      output = toOutput (name for name, val of @hotcoffee.db)
       @req.url = '/'
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
+
+
+  describe 'onPOST(req, res)', ->
+
+    it 'should response an empty array if resource name is empty', (done)->
+      output = toOutput []
+      @req.url = "/"
+      # @hotcoffee.on 'render', (res, result)->
+      #   @res.end.calledOnce.should.be.ok
+      #   @res.end.calledWith(output).should.be.ok
+      #   console.log @res.end.args
+      #   done null
+      @hotcoffee.onPOST @req, @res
+      @req.emit 'data', 'hello='
+      @req.emit 'data', 'world' 
+      @req.emit 'end'
+      done null
 
 
 

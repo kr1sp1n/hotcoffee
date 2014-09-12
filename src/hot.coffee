@@ -86,7 +86,9 @@ class Hotcoffee extends EventEmitter
       if resource != ""
         @db[resource].push body
         @emit 'POST', resource, body
-      @render res, body
+        @render res, body
+      else
+        @render res, []
 
   onPATCH: (req, res)->
     [ resource, key, value ] = @parseURL req.url
