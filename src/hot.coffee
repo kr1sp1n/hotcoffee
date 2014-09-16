@@ -82,11 +82,10 @@ class Hotcoffee extends EventEmitter
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     @parseBody req, (err, body)=>
-      console.log err if err?
       if resource != ""
         @db[resource].push body
-        @emit 'POST', resource, body
         @render res, body
+        @emit 'POST', resource, body
       else
         @render res, []
 
@@ -123,8 +122,8 @@ class Hotcoffee extends EventEmitter
     @render res, result
 
   render: (res, result)->
-    @emit 'render', res, result
     res.end JSON.stringify(result, null, 2) + '\n'
+    @emit 'render', res, result
 
   onRequest: (req, res)->
     @emit 'request', req, res

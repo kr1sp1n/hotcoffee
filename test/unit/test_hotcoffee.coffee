@@ -18,6 +18,14 @@ describe 'HotCoffee', ->
       writeHead: sinon.stub()
 
     @hotcoffee = require("#{__dirname}/../../src/hot")()
+    @hotcoffee.db = 
+      resource1: [
+        id: 1
+        id: 2, name: 'hello'
+        id: 3, name: 'world'
+      ]
+      resource2: []
+
     @plugin = (app, opts)=>
       return name: 'Superplugin', opts: opts
 
@@ -141,15 +149,6 @@ describe 'HotCoffee', ->
 
   describe 'onGET(req, res)', ->
 
-    beforeEach ->
-      @hotcoffee.db = 
-        resource1: [
-          id: 1
-          id: 2, name: 'hello'
-          id: 3, name: 'world'
-        ]
-        resource2: []
-
     it 'should emit a "GET" event with req and res', (done)->
       @hotcoffee.on 'GET', (req, res)=>
         req.url.should.equal @req.url
@@ -197,16 +196,45 @@ describe 'HotCoffee', ->
     it 'should response an empty array if resource name is empty', (done)->
       output = toOutput []
       @req.url = "/"
-      # @hotcoffee.on 'render', (res, result)->
-      #   @res.end.calledOnce.should.be.ok
-      #   @res.end.calledWith(output).should.be.ok
-      #   console.log @res.end.args
-      #   done null
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.be.empty
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        done null
       @hotcoffee.onPOST @req, @res
       @req.emit 'data', 'hello='
       @req.emit 'data', 'world' 
       @req.emit 'end'
-      done null
+
+    it 'should emit a "POST" event with resource and body', (done)-> 
+      resource = 'resource2'
+      @req.url = "/#{resource}"
+      @hotcoffee.db[resource].should.be.empty
+      @hotcoffee.on 'POST', (resource_name, body)=>
+        resource.should.equal resource_name
+        @hotcoffee.db[resource].should.have.lengthOf 1
+        body.should.have.property 'hello', 'world'
+        done null
+      @hotcoffee.onPOST @req, @res
+      @req.emit 'data', 'hello='
+      @req.emit 'data', 'world' 
+      @req.emit 'end'
+
+
+  describe 'onPATCH(req, res)', ->
+
+    it 'should emit a "PATCH" event with resource, result and body', (done)->
+      resource = 'resource1'
+      key = 'id'
+      @req.url = "/#{resource}/#{key}"
+      @hotcoffee.on 'PATCH', (resource, result, body)->
+        done null
+      @hotcoffee.onPATCH @req, @res
+      @req.emit 'data', 'hello='
+      @req.emit 'data', 'world' 
+      @req.emit 'end'
+
+
 
 
 
