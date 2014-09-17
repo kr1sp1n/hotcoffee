@@ -164,21 +164,21 @@ describe 'HotCoffee', ->
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
 
-    it 'should response items that have a specific property', ->
+    it 'should response items that have a specific key', ->
       resource = 'resource1'
-      property = 'name'
-      output = toOutput (@hotcoffee.db[resource].filter (x)-> x[property]?)
-      @req.url = "/#{resource}/#{property}"
+      key = 'name'
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> x[key]?)
+      @req.url = "/#{resource}/#{key}"
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
 
-    it 'should response items that match a specific value of a property', ->
+    it 'should response items that match a specific value of a key', ->
       resource = 'resource1'
-      property = 'name'
+      key = 'name'
       value = 'hello'
-      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[property])==String(value))
-      @req.url = "/#{resource}/#{property}/#{value}"
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
+      @req.url = "/#{resource}/#{key}/#{value}"
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
@@ -233,6 +233,37 @@ describe 'HotCoffee', ->
       @req.emit 'data', 'hello='
       @req.emit 'data', 'world' 
       @req.emit 'end'
+
+    it 'should create an empty array if resource does not exist', (done)->
+      resource = 'turtles'
+      output = toOutput []
+      @req.url = "/#{resource}"
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.be.empty
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        done null
+      @hotcoffee.onPATCH @req, @res
+      @req.emit 'data', 'hello='
+      @req.emit 'data', 'world' 
+      @req.emit 'end'
+
+    it 'should modify the items that match a specific value of a key', (done)->
+      resource = 'resource1'
+      key = 'id'
+      value = 2
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
+      @req.url = "/#{resource}/#{key}/#{value}"
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.be.empty
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        done null
+      @hotcoffee.onPATCH @req, @res
+      @req.emit 'data', 'name='
+      @req.emit 'data', 'goodbye' 
+      @req.emit 'end'
+
 
 
 

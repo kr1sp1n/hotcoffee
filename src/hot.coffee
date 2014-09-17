@@ -96,7 +96,6 @@ class Hotcoffee extends EventEmitter
     result = result.filter((x) -> x[key]?) if key?
     result = result.filter((x) -> String(x[key]) == String(value)) if value?
     @parseBody req, (err, body)=>
-      console.log err if err?
       @merge k, body for k in result
       @emit 'PATCH', resource, result, body
       @render res, result
