@@ -20,6 +20,7 @@ describe 'mongodb Plugin', ->
     @collection =
       find: sinon.stub()
       toArray: sinon.stub()
+      insert: sinon.stub()
 
     @collection.toArray.yields null, @turtles
     @collection.find.returns @collection
@@ -51,6 +52,7 @@ describe 'mongodb Plugin', ->
         err.message.should.equal "No MongoDB URL set"
         done null
 
+
   describe 'loadCollection(resource)', ->
 
     it 'should load MongoDB collections in the app DB', ->
@@ -59,4 +61,18 @@ describe 'mongodb Plugin', ->
       @db.collection.called.should.be.ok
       @db.collection.calledWith(resource).should.be.ok
       @app.db[resource].should.equal @turtles
+
+
+  describe 'registerEvents()', ->
+
+    it 'should register on "POST" events of the app', ->
+      resource = 'beatles'
+      data = name: 'John Lennon'
+      @plugin.registerEvents()
+      @app.emit 'POST', resource, data
+      @db.collection.calledWith(resource).should.be.ok
+      @collection.insert.called.should.be.ok
+      @collection.insert.calledWith(data).should.be.ok
+
+
 
