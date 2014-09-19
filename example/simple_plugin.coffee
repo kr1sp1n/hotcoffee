@@ -1,12 +1,13 @@
 # file: example/plugins.coffee
 
-app = require("#{__dirname}/../hot")()
+app = require("#{__dirname}/../src/hot")()
 
 plugin = (app, config)->
+  awesome = config.awesome
   # react on app events
   app.on 'start', (next)->
-    console.log app
     console.log 'App started!'
+    console.log 'With awesomeness!' if awesome
 
   app.on 'stop', ->
     console.log 'App stopped!'
@@ -14,8 +15,7 @@ plugin = (app, config)->
   # return at least an object with a name property
   return name: 'My awesome plugin'
 
-
 app
-  .use plugin
+  .use plugin, { awesome: true }
   .start()
   .stop()
