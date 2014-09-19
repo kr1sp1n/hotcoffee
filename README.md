@@ -1,6 +1,8 @@
 hotcoffee
 ==============================
 
+[![Build Status](https://travis-ci.org/kr1sp1n/hotcoffee.svg?branch=master)](https://travis-ci.org/kr1sp1n/hotcoffee)
+
 REST API that saves everything you can imagine.
 You just think about a collection name and add an item to it by sending a POST request with body data.
 Then you can manipulate items of a collection.
