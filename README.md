@@ -1,19 +1,39 @@
 hotcoffee
-=========
+==============================
+
 REST API that saves everything you can imagine.
 You just think about a collection name and add an item to it by sending a POST request with body data.
 Then you can manipulate items of a collection.
 
-## Start
 
+Install
+-----------------------------
 
 ```bash
-coffee hot.coffee file=/path/to/valid/json/file
+git clone git://github.com/kr1sp1n/hotcoffee.git
+cd hotcoffee
+make install
 ```
 
 
-## Usage
+Run Tests
+-----------------------------
 
+```bash
+make test
+```
+
+
+Start in develop mode
+-----------------------------
+
+```bash
+make dev-start
+```
+
+
+Usage
+-----------------------------
 
 ### GET a list of all collections
 
@@ -27,6 +47,7 @@ __Response__ would be an empty JSON array as long as you never added an item to 
 []
 ```
 
+
 ### POST a new item to a collection
 
 ```bash
@@ -35,10 +56,10 @@ curl -X POST -d "name=Donatello&color=purple" http://localhost:1337/turtles
 
 __Response__
 
-
 ```JSON
 {
   "name": "Donatello",
   "color": "purple"
 }
 ```
+

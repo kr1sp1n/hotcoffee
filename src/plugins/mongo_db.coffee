@@ -1,20 +1,21 @@
 # file: plugins/mongodb.coffee
 
-class Plugin
+EventEmitter = require('events').EventEmitter
+
+class Plugin extends EventEmitter
 
   constructor: (@app, @opts)->
     @name = 'mongodb'
     @collections = {}
-    @client = require('mongodb').MongoClient
+    @client = @opts?.client or require('mongodb').MongoClient 
     @db = null
-    @registerEvents()
-    if @opts?.url?
-      @connect (err)=>
-        console.log "Connected to #{@opts.url}"
-        @db.collectionNames namesOnly: true, (err, names)=>
-          @loadCollection name.split('.')[1] for name in (names.filter (name)-> name.split('.')[1] != "system")
+    @connect (err)=>
+      @registerEvents()
+      @db.collectionNames namesOnly: true, (err, names)=>
+        @loadCollection name.split('.')[1] for name in (names.filter (name)-> name.split('.')[1] != "system")
 
   connect: (done)->
+    return done new Error 'No MongoDB URL set' unless @opts?.url?
     @client.connect @opts.url, (err, @db)=>
       done err
 

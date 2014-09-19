@@ -12,7 +12,7 @@ class Hotcoffee extends EventEmitter
       'post': @onPOST.bind @
       'patch': @onPATCH.bind @
       'delete': @onDELETE.bind @
-      'head': @onHEAD.bind @
+      # 'head': @onHEAD.bind @
 
     @init config
 
@@ -20,6 +20,7 @@ class Hotcoffee extends EventEmitter
     @config.port = process.env.PORT or @config?.port or 1337
     @config.host = @config?.host or 'localhost'
     @db = {} # in-memory db
+    @server = http.createServer @onRequest.bind @
     @plugins = {} # list of plugins
     process.once 'exit', @onExit.bind @
     process.once 'SIGINT', @onSIGINT.bind @
@@ -114,11 +115,11 @@ class Hotcoffee extends EventEmitter
     @emit 'DELETE', resource, result
     @render res, result
 
-  onHEAD: (req, res)->
-    @emit 'HEAD', req, res
-    [ resource, key, value ] = @parseURL req.url
-    result = [] # resource keys
-    @render res, result
+  # onHEAD: (req, res)->
+  #   @emit 'HEAD', req, res
+  #   [ resource, key, value ] = @parseURL req.url
+  #   result = [] # resource keys
+  #   @render res, result
 
   render: (res, result)->
     res.end JSON.stringify(result, null, 2) + '\n'
@@ -134,15 +135,13 @@ class Hotcoffee extends EventEmitter
       res.end 'Method not supported.\n'
 
   start: ->
-    @emit 'start'
-    @server = http.createServer @onRequest.bind @
     @server.listen @config.port
-    console.log "HTTP Server listening on port #{@config.port}"
+    @emit 'start'
     return @
 
   stop: ->
-    @emit 'stop'
     @server.close()
+    @emit 'stop'
     return @
 
 module.exports = (config)->

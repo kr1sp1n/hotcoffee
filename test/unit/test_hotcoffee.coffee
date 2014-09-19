@@ -10,19 +10,27 @@ toOutput = (obj)->
 describe 'HotCoffee', ->
   beforeEach ->
     @req = new EventEmitter()
+    @req.method = 'GET'
     @req.url = "/turtles/name/Donatello"
     @req.end = sinon.stub()
+    @req.send = (data)=>
+      @req.emit 'data', data 
+      @req.emit 'end'
 
     @res =
       end: sinon.stub()
       writeHead: sinon.stub()
 
     @hotcoffee = require("#{__dirname}/../../src/hot")()
+    @hotcoffee.server = 
+      listen: sinon.stub()
+      close: sinon.stub()
+
     @hotcoffee.db = 
       resource1: [
-        id: 1
-        id: 2, name: 'hello'
-        id: 3, name: 'world'
+        { id: 1 }
+        { id: 2, name: 'hello' }
+        { id: 3, name: 'world' }
       ]
       resource2: []
 
@@ -142,9 +150,7 @@ describe 'HotCoffee', ->
       @hotcoffee.parseBody @req, (err, body)=>
         body.should.have.property 'hello', 'world'
         done err
-      @req.emit 'data', 'hello='
-      @req.emit 'data', 'world' 
-      @req.emit 'end'
+      @req.send 'hello=world'
 
 
   describe 'onGET(req, res)', ->
@@ -202,9 +208,7 @@ describe 'HotCoffee', ->
         @res.end.calledWith(output).should.be.ok
         done null
       @hotcoffee.onPOST @req, @res
-      @req.emit 'data', 'hello='
-      @req.emit 'data', 'world' 
-      @req.emit 'end'
+      @req.send 'hello=world'
 
     it 'should emit a "POST" event with resource and body', (done)-> 
       resource = 'resource2'
@@ -216,9 +220,7 @@ describe 'HotCoffee', ->
         body.should.have.property 'hello', 'world'
         done null
       @hotcoffee.onPOST @req, @res
-      @req.emit 'data', 'hello='
-      @req.emit 'data', 'world' 
-      @req.emit 'end'
+      @req.send 'hello=world'
 
 
   describe 'onPATCH(req, res)', ->
@@ -227,12 +229,11 @@ describe 'HotCoffee', ->
       resource = 'resource1'
       key = 'id'
       @req.url = "/#{resource}/#{key}"
-      @hotcoffee.on 'PATCH', (resource, result, body)->
+      @hotcoffee.on 'PATCH', (resource_name, result, body)->
+        resource_name.should.equal resource
         done null
       @hotcoffee.onPATCH @req, @res
-      @req.emit 'data', 'hello='
-      @req.emit 'data', 'world' 
-      @req.emit 'end'
+      @req.send 'hello=world'
 
     it 'should create an empty array if resource does not exist', (done)->
       resource = 'turtles'
@@ -244,28 +245,98 @@ describe 'HotCoffee', ->
         @res.end.calledWith(output).should.be.ok
         done null
       @hotcoffee.onPATCH @req, @res
-      @req.emit 'data', 'hello='
-      @req.emit 'data', 'world' 
-      @req.emit 'end'
+      @req.send 'hello=world'
 
     it 'should modify the items that match a specific value of a key', (done)->
       resource = 'resource1'
       key = 'id'
       value = 2
-      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
       @req.url = "/#{resource}/#{key}/#{value}"
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.have.lengthOf 1
+        output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        done null
+      @hotcoffee.onPATCH @req, @res
+      @req.send 'name=goodbye'
+
+
+  describe 'onDELETE(req, res)', ->
+
+    it 'should emit a "DELETE" event with resource and result', (done)->
+      resource = 'resource1'
+      key = 'id'
+      value = 3
+      @req.url = "/#{resource}/#{key}/#{value}"
+      @hotcoffee.on 'DELETE', (resource_name, result)->
+        resource_name.should.equal resource
+        result.should.have.lengthOf 1
+        result[0].should.have.property 'id', value
+        done null
+      @hotcoffee.onDELETE @req, @res
+
+    it 'should delete a resource collection if requested', (done)->
+      resource = 'resource1'
+      @hotcoffee.db[resource].should.have.lengthOf 3
+      @req.url = "/#{resource}"
+      output = toOutput @hotcoffee.db[resource]
+      @hotcoffee.on 'render', (res, result)=>
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        should(@hotcoffee.db[resource]).not.be.ok
+        done null
+      @hotcoffee.onDELETE @req, @res
+
+    it 'should create an empty array if resource does not exist', (done)->
+      resource = 'turtles'
+      output = toOutput []
+      @req.url = "/#{resource}"
       @hotcoffee.on 'render', (res, result)=>
         result.should.be.empty
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
-      @hotcoffee.onPATCH @req, @res
-      @req.emit 'data', 'name='
-      @req.emit 'data', 'goodbye' 
-      @req.emit 'end'
+      @hotcoffee.onDELETE @req, @res
 
 
+  describe 'onRequest(req, res)', ->
 
+    it 'should emit a "request" event with req and res', (done)->
+      @req.url = '/'
+      @hotcoffee.on 'request', (req, res)=>
+        req.url.should.equal '/'
+        done null
+      @hotcoffee.onRequest @req, @res
+
+    it 'should respond an error if HTTP method is not supported', ->
+      @req.method = 'STUPID'
+      output = "Method not supported.\n"
+      @hotcoffee.onRequest @req, @res
+      @res.end.calledOnce.should.be.ok
+      @res.end.calledWith(output).should.be.ok
+
+
+  describe 'start()', ->
+
+    it 'should emit a "start" event', (done)->
+      @hotcoffee.on 'start', ->
+        done null
+      @hotcoffee.start()
+
+    it 'should listen on the configured port', ->
+      port = @hotcoffee.config.port
+      @hotcoffee.start()
+      @hotcoffee.server.listen.calledOnce.should.be.ok
+      @hotcoffee.server.listen.calledWith(port).should.be.ok
+
+
+  describe 'stop()', ->
+
+    it 'should emit a "stop" event', (done)->
+      @hotcoffee.on 'stop', ->
+        done null
+      @hotcoffee.stop()
 
 
 
