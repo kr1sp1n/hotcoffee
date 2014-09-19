@@ -7,3 +7,5 @@ node_js:
 deploy:
   provider: heroku
   api_key: "c9568d64907181e01d6013b4d4fc3cd2"
+after_success:
+  - make coveralls

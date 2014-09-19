@@ -27,5 +27,8 @@ test-watch:
 cov:
 	$(MOCHA_BIN) $(TEST_UNIT_DIR) -R mocha-spec-cov-alt
 
+coveralls:
+	NODE_ENV=test $(MOCHA_BIN) $(TEST_UNIT_DIR) -R mocha-lcov-reporter | $(BIN_DIR)/coveralls
+
 cov-html:
 	$(MOCHA_BIN) $(TEST_UNIT_DIR) -R html-cov > ./cov.html
