@@ -2,7 +2,7 @@
   "name": "hotcoffee",
   "version": "0.0.2",
   "description": "Brew you some hot micro servers",
-  "main": "hot.coffee",
+  "main": "index.coffee",
   "scripts": {
     "test": "make test"
   },
@@ -26,8 +26,8 @@
   "readmeFilename": "README.md",
   "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e",
   "dependencies": {
-    "coffee-script": "~1.6.3",
-    "mongodb": "^1.4.10"
+    "mongodb": "^1.4.10",
+    "coffee-script": "^1.8.0"
   },
   "devDependencies": {
     "mocha": "^1.21.4",
