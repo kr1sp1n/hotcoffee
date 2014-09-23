@@ -8,10 +8,10 @@ describe 'mongodb Plugin', ->
   beforeEach ->
     @app = new EventEmitter()
     @turtles = [
-      { id: 1, name: 'Donatello' }
-      { id: 2, name: 'Leonardo' }
-      { id: 3, name: 'Michelangelo' }
-      { id: 4, name: 'Raphael' }
+      { id: 1, _id: 1, name: 'Donatello' }
+      { id: 2, _id: 2, name: 'Leonardo' }
+      { id: 3, _id: 3, name: 'Michelangelo' }
+      { id: 4, _id: 4, name: 'Raphael' }
     ]
     @app.db = {}
     @db =
@@ -21,6 +21,8 @@ describe 'mongodb Plugin', ->
       find: sinon.stub()
       toArray: sinon.stub()
       insert: sinon.stub()
+      update: sinon.stub()
+      remove: sinon.stub()
 
     @collection.toArray.yields null, @turtles
     @collection.find.returns @collection
@@ -65,7 +67,7 @@ describe 'mongodb Plugin', ->
 
   describe 'registerEvents()', ->
 
-    it 'should register on "POST" events of the app', ->
+    it 'should listen on "POST" events of the app', ->
       resource = 'beatles'
       data = name: 'John Lennon'
       @plugin.registerEvents()
@@ -74,5 +76,19 @@ describe 'mongodb Plugin', ->
       @collection.insert.called.should.be.ok
       @collection.insert.calledWith(data).should.be.ok
 
+    it 'should listen on "PATCH" events of the app', ->
+      resource = 'turtles'
+      items = @turtles
+      data = status: 'hungry'
+      @plugin.registerEvents()
+      @app.emit 'PATCH', resource, items, data
+      @collection.update.called.should.be.ok
+
+    it 'should listen on "DELETE" events of the app', ->
+      resource = 'turtles'
+      items = @turtles
+      @plugin.registerEvents()
+      @app.emit 'DELETE', resource, items
+      @collection.remove.called.should.be.ok
 
 

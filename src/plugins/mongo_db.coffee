@@ -32,9 +32,9 @@ class Plugin extends EventEmitter
         @collections[resource] = @db.collection resource
       @collections[resource].insert data, (err, docs)->
 
-    @app.on 'DELETE', (resource, data)=>
+    @app.on 'DELETE', (resource, items)=>
       if @collections[resource]?
-        ids = data.map (x)-> x._id
+        ids = items.map (x)-> x._id
         selector = {'_id':{$in:ids}}
         @collections[resource].remove selector, (err, count)->
 
