@@ -5,7 +5,7 @@ EventEmitter = require('events').EventEmitter
 class Plugin extends EventEmitter
 
   constructor: (@app, @opts)->
-    @name = 'mongodb'
+    @name = 'mongo_db'
     @collections = {}
     @client = @opts?.client or require('mongodb').MongoClient 
     @db = null

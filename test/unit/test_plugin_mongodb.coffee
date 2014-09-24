@@ -4,7 +4,7 @@ should = require 'should'
 sinon = require 'sinon'
 EventEmitter = require('events').EventEmitter
 
-describe 'mongodb Plugin', ->
+describe 'mongo_db Plugin', ->
   beforeEach ->
     @app = new EventEmitter()
     @turtles = [
@@ -38,7 +38,7 @@ describe 'mongodb Plugin', ->
     @plugin = require("#{__dirname}/../../src/plugins/mongo_db")(@app, @opts)
 
   it 'should expose its right name', ->
-    @plugin.name.should.equal 'mongodb'
+    @plugin.name.should.equal 'mongo_db'
 
 
   describe 'connect(done)', ->
