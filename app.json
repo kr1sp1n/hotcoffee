@@ -1,0 +1,4 @@
+{
+  "name": "hotcoffee",
+  "addons": ["mongohq"]
+}
