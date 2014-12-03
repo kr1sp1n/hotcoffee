@@ -2,17 +2,25 @@ http = require 'http'
 URL = require 'url'
 qs = require 'querystring'
 fs = require 'fs'
+path = require 'path'
 EventEmitter = require('events').EventEmitter
 
 class Hotcoffee extends EventEmitter
   constructor: (config)->
     process.setMaxListeners 0
-    @methods = 
+    @methods =
       'get': @onGET.bind @
       'post': @onPOST.bind @
       'patch': @onPATCH.bind @
       'delete': @onDELETE.bind @
       # 'head': @onHEAD.bind @
+
+    # default output formats
+    default_output = (res, result)->
+      res.end JSON.stringify(result, null, 2) + '\n'
+    @formats =
+      json: default_output
+      'application/json': default_output
 
     @init config
 
@@ -34,6 +42,12 @@ class Hotcoffee extends EventEmitter
     @emit 'use', fn, opts
     return @
 
+  # content negotiation
+  accept: (formats)=>
+    # merge with default outputs
+    @formats[key] = value for key, value of formats
+    return @
+
   isRoot: (url)-> url == '/'
 
   onExit: -> @emit 'exit'
@@ -48,14 +62,15 @@ class Hotcoffee extends EventEmitter
     for key, value of source
       dest[key] = source[key]
 
-  writeHead: (res)-> 
-    res.writeHead 200,
-      'Content-Type': 'application/json'
-      'Access-Control-Allow-Origin': '*'
+  writeHead: (res)->
+    res.setHeader 'Access-Control-Allow-Origin', '*'
 
   parseURL: (url)->
     x = URL.parse(url).pathname.split('/')
     x.shift() # remove first empty string element
+    ext = @getExtension url
+    if ext?
+      x[0] = x[0].split('.')[0]
     return x
 
   parseBody: (req, done)->
@@ -121,13 +136,39 @@ class Hotcoffee extends EventEmitter
   #   result = [] # resource keys
   #   @render res, result
 
+  extendResponse: (req, res)->
+    res.req = req
+
+  getExtension: (url)->
+    x = path.extname(URL.parse(url).pathname).split('.')
+    return x[1] if x.length > 1
+    return null
+
+  getResource: (url)->
+    [resource] = @parseURL url
+    return resource
+
+  mapResult: (res, result)->
+    if @formats?
+      extension = res.req.extension
+      accept = res.req.headers['accept']
+      format = 'json'
+      if @formats[extension]
+        format = extension
+      else if @formats[accept]
+        format = accept
+      @formats[format] res, result
+
   render: (res, result)->
-    res.end JSON.stringify(result, null, 2) + '\n'
+    @mapResult res, result
     @emit 'render', res, result
 
   onRequest: (req, res)->
     @emit 'request', req, res
     @writeHead res
+    @extendResponse req, res
+    req.resource = @getResource req.url
+    req.extension = @getExtension req.url
     method = req.method.toLowerCase()
     if @methods[method]?
       @methods[method] req, res
@@ -146,4 +187,3 @@ class Hotcoffee extends EventEmitter
 
 module.exports = (config)->
   return new Hotcoffee config
-

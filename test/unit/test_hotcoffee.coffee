@@ -13,20 +13,23 @@ describe 'HotCoffee', ->
     @req.method = 'GET'
     @req.url = "/turtles/name/Donatello"
     @req.end = sinon.stub()
+    @req.headers = {}
     @req.send = (data)=>
-      @req.emit 'data', data 
+      @req.emit 'data', data
       @req.emit 'end'
 
     @res =
       end: sinon.stub()
       writeHead: sinon.stub()
+      setHeader: sinon.stub()
+      req: @req
 
     @hotcoffee = require("#{__dirname}/../../src/hot")()
-    @hotcoffee.server = 
+    @hotcoffee.server =
       listen: sinon.stub()
       close: sinon.stub()
 
-    @hotcoffee.db = 
+    @hotcoffee.db =
       resource1: [
         { id: 1 }
         { id: 2, name: 'hello' }
@@ -115,7 +118,7 @@ describe 'HotCoffee', ->
     beforeEach ->
       @dest =
         test: 0
-      @source = 
+      @source =
         test: 1
         hello: 'world'
 
@@ -132,7 +135,7 @@ describe 'HotCoffee', ->
 
     it 'should write HTTP headers to res', ->
       @hotcoffee.writeHead @res
-      @res.writeHead.calledOnce.should.be.ok
+      @res.setHeader.called.should.be.ok
 
 
   describe 'parseURL(url)', ->
@@ -210,7 +213,7 @@ describe 'HotCoffee', ->
       @hotcoffee.onPOST @req, @res
       @req.send 'hello=world'
 
-    it 'should emit a "POST" event with resource and body', (done)-> 
+    it 'should emit a "POST" event with resource and body', (done)->
       resource = 'resource2'
       @req.url = "/#{resource}"
       @hotcoffee.db[resource].should.be.empty
@@ -337,6 +340,3 @@ describe 'HotCoffee', ->
       @hotcoffee.on 'stop', ->
         done null
       @hotcoffee.stop()
-
-
-
