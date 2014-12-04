@@ -6,7 +6,7 @@ toRSS = (res, result)->
   output += '<title>'+resource+'</title>'
   output += '<link>'+endpoint+'/'+resource+'</link>'
   for item in result
-    output += '<item><title>'+item.name+'</title>'
+    output += '<item><title>'+item.name or item.title+'</title>'
     output += '<description><![CDATA['+JSON.stringify(item)+']]></description></item>'
   output += '</channel></rss>'
   res.setHeader 'Content-Type', 'application/rss+xml; charset=utf-8'
