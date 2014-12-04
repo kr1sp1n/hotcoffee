@@ -13,7 +13,6 @@ class Hotcoffee extends EventEmitter
       'post': @onPOST.bind @
       'patch': @onPATCH.bind @
       'delete': @onDELETE.bind @
-      # 'head': @onHEAD.bind @
 
     # default output formats
     default_output = (res, result)->
@@ -27,6 +26,7 @@ class Hotcoffee extends EventEmitter
   init: (@config={}, done)->
     @config.port = process.env.PORT or @config?.port or 1337
     @config.host = @config?.host or 'localhost'
+    @config.endpoint = process.env.ENDPOINT or @config?.endpoint or "http://#{@config.host}:#{@config.port}"
     @db = {} # in-memory db
     @server = http.createServer @onRequest.bind @
     @plugins = {} # list of plugins
@@ -130,14 +130,9 @@ class Hotcoffee extends EventEmitter
     @emit 'DELETE', resource, result
     @render res, result
 
-  # onHEAD: (req, res)->
-  #   @emit 'HEAD', req, res
-  #   [ resource, key, value ] = @parseURL req.url
-  #   result = [] # resource keys
-  #   @render res, result
-
   extendResponse: (req, res)->
     res.req = req
+    res.endpoint = @config.endpoint
 
   getExtension: (url)->
     x = path.extname(URL.parse(url).pathname).split('.')
