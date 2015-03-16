@@ -1,4 +1,4 @@
-# file: plugins/filedb.coffee
+# file: plugins/file_db.coffee
 
 class Plugin
   constructor: (@app, @opts)->

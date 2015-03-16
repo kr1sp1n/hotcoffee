@@ -1,7 +1,6 @@
 http = require 'http'
 URL = require 'url'
 qs = require 'querystring'
-fs = require 'fs'
 path = require 'path'
 EventEmitter = require('events').EventEmitter
 

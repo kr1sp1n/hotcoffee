@@ -26,8 +26,8 @@
   "readmeFilename": "README.md",
   "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e",
   "dependencies": {
-    "mongodb": "^1.4.10",
-    "coffee-script": "^1.8.0"
+    "coffee-script": "^1.8.0",
+    "hotcoffee-config": "0.0.1"
   },
   "devDependencies": {
     "mocha": "^1.21.4",
