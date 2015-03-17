@@ -1,8 +1,6 @@
-# file: example/plugins.coffee
+# file: example/simple_plugin.coffee
 
-app = require("#{__dirname}/../index")()
-
-plugin = (app, config)->
+module.exports = (app, config)->
   awesome = config.awesome
   # react on app events
   app.on 'start', (next)->
@@ -14,8 +12,3 @@ plugin = (app, config)->
 
   # return at least an object with a name property
   return name: 'My awesome plugin'
-
-app
-  .use plugin, { awesome: true }
-  .start()
-  .stop()
