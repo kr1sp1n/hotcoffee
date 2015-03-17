@@ -1,11 +1,6 @@
 language: node_js
-services:
-  - mongodb
 node_js:
   - "0.11"
   - "0.10"
-deploy:
-  provider: heroku
-  api_key: "c9568d64907181e01d6013b4d4fc3cd2"
 after_success:
   - make coveralls
