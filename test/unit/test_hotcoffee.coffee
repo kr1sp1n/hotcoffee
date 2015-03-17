@@ -24,7 +24,7 @@ describe 'HotCoffee', ->
       setHeader: sinon.stub()
       req: @req
 
-    @hotcoffee = require("#{__dirname}/../../src/hot")()
+    @hotcoffee = require("#{__dirname}/../../index")()
     @hotcoffee.server =
       listen: sinon.stub()
       close: sinon.stub()
@@ -86,6 +86,7 @@ describe 'HotCoffee', ->
 
 
   describe 'onExit()', ->
+    
     beforeEach ->
       process.exit.restore() if process.exit.restore?
       @exit = sinon.stub process, 'exit'

@@ -1,6 +1,6 @@
 # file: example/plugins.coffee
 
-app = require("#{__dirname}/../src/hot")()
+app = require("#{__dirname}/../index")()
 
 plugin = (app, config)->
   awesome = config.awesome

@@ -5,16 +5,12 @@ BIN_DIR = $(MODULE_DIR)/.bin
 MOCHA_BIN = $(BIN_DIR)/mocha
 TEST_UNIT_DIR = ./test/unit
 MOCHA_REPORTER = spec
-NODE_DEV_BIN = $(BIN_DIR)/node-dev
 
 install:
 	npm install
 
 clean:
 	rm -rf ./node_modules
-
-dev-start:
-	$(NODE_DEV_BIN) index.coffee
 
 test: test-unit
 

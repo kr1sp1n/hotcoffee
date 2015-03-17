@@ -26,8 +26,7 @@
   "readmeFilename": "README.md",
   "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e",
   "dependencies": {
-    "coffee-script": "^1.8.0",
-    "hotcoffee-config": "0.0.1"
+    "coffee-script": "^1.8.0"
   },
   "devDependencies": {
     "mocha": "^1.21.4",
@@ -35,14 +34,13 @@
     "blanket": "1.1.6",
     "mocha-spec-cov-alt": "0.1.1",
     "sinon": "1.10.3",
-    "node-dev": "^2.4.0",
     "mocha-lcov-reporter": "0.0.1",
     "coveralls": "^2.11.1"
   },
   "config": {
     "blanket": {
       "pattern": [
-        "src"
+        "index.coffee"
       ],
       "loader": "./node-loaders/coffee-script",
       "data-cover-never": [
