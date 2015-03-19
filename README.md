@@ -28,11 +28,11 @@ make test
 ```
 
 
-Start in develop mode
+Start the example server
 -----------------------------
 
 ```bash
-make dev-start
+./node_modules/.bin/coffee example/simple_server.coffee
 ```
 
 
