@@ -6,7 +6,6 @@ EventEmitter = require('events').EventEmitter
 
 class Hotcoffee extends EventEmitter
   constructor: (config)->
-    process.setMaxListeners 0
     @methods =
       'get': @onGET.bind @
       'post': @onPOST.bind @
@@ -23,14 +22,16 @@ class Hotcoffee extends EventEmitter
     @init config
 
   init: (@config={}, done)->
-    @config.port = process.env.PORT or @config?.port or 1337
+    @process = @config.process or process
+    @process.setMaxListeners 0
+    @config.port = @process.env.PORT or @config?.port or 1337
     @config.host = @config?.host or 'localhost'
-    @config.endpoint = process.env.ENDPOINT or @config?.endpoint or "http://#{@config.host}:#{@config.port}"
+    @config.endpoint = @process.env.ENDPOINT or @config?.endpoint or "http://#{@config.host}:#{@config.port}"
     @db = {} # in-memory db
     @server = http.createServer @onRequest.bind @
     @plugins = {} # list of plugins
-    process.once 'exit', @onExit.bind @
-    process.once 'SIGINT', @onSIGINT.bind @
+    @process.once 'exit', @onExit.bind @
+    @process.once 'SIGINT', @onSIGINT.bind @
     @emit 'init', @config
     return done(null) if done?
 
@@ -53,7 +54,7 @@ class Hotcoffee extends EventEmitter
 
   onSIGINT: ->
     @onExit()
-    process.exit(0)
+    @process.exit(0)
 
   merge: (dest, source)->
     for key, value of dest
@@ -69,7 +70,8 @@ class Hotcoffee extends EventEmitter
     x.shift() # remove first empty string element
     ext = @getExtension url
     if ext?
-      x[0] = x[0].split('.')[0]
+      [rest..., last] = x
+      x[x.length-1] = last.split('.')[0]
     return x
 
   parseBody: (req, done)->

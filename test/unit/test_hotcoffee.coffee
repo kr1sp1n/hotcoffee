@@ -7,8 +7,11 @@ EventEmitter = require('events').EventEmitter
 toOutput = (obj)->
   JSON.stringify(obj, null, 2) + '\n'
 
-describe 'HotCoffee', ->
+describe 'Hotcoffee', ->
   beforeEach ->
+    @process = sinon.stub new EventEmitter()
+    @process.env = {}
+    @process.exit = sinon.stub()
     @req = new EventEmitter()
     @req.method = 'GET'
     @req.url = "/turtles/name/Donatello"
@@ -24,7 +27,7 @@ describe 'HotCoffee', ->
       setHeader: sinon.stub()
       req: @req
 
-    @hotcoffee = require("#{__dirname}/../../index")()
+    @hotcoffee = require("#{__dirname}/../../index")(process: @process)
     @hotcoffee.server =
       listen: sinon.stub()
       close: sinon.stub()
@@ -40,6 +43,16 @@ describe 'HotCoffee', ->
     @plugin = (app, opts)=>
       return name: 'Superplugin', opts: opts
 
+    @mygreatformat.reset() if @mygreatformat?.reset?
+
+    @mygreatformat = sinon.spy (res, result)->
+      output = result.map (x)-> "#{JSON.stringify(x)}"
+      res.setHeader 'Content-Type', 'text/mygreatformat; charset=utf-8'
+      res.end output
+
+    @format =
+      'mgf': @mygreatformat # file extension
+      'text/mygreatformat': @mygreatformat #Mime type
 
   describe 'init(config, done)', ->
     beforeEach ->
@@ -73,6 +86,21 @@ describe 'HotCoffee', ->
         done null
       @hotcoffee.use @plugin, options
 
+  describe 'accept(format)', ->
+
+    it 'should extend accepted formats', ->
+      @hotcoffee.accept @format
+      @hotcoffee.formats.should.have.property 'mgf'
+      @hotcoffee.formats.should.have.property 'text/mygreatformat'
+
+    it 'should overwrite existing formats', ->
+      new_json_format = (res, result)->
+        res.end 'lala'
+      formats =
+        'json': new_json_format
+      @hotcoffee.accept formats
+      @hotcoffee.formats.json.should.equal new_json_format
+
 
   describe 'isRoot(url)', ->
 
@@ -86,10 +114,9 @@ describe 'HotCoffee', ->
 
 
   describe 'onExit()', ->
-    
+
     beforeEach ->
-      process.exit.restore() if process.exit.restore?
-      @exit = sinon.stub process, 'exit'
+      @process.exit.restore() if @process.exit.restore?
 
     it 'should emit an "exit" event', (done)->
       @hotcoffee.on 'exit', done
@@ -99,9 +126,8 @@ describe 'HotCoffee', ->
   describe 'onSIGINT()', ->
 
     beforeEach ->
-      process.exit.restore() if process.exit.restore?
-      @hotcoffee.onExit.restore() if @hotcoffee.onExit.restore?
-      @exit = sinon.stub process, 'exit'
+      @process.exit.restore() if @process.exit.restore?
+      @hotcoffee.onExit.reset() if @hotcoffee.onExit.reset?
       @onExit = sinon.spy @hotcoffee, 'onExit'
 
     it 'should call onExit()', ->
@@ -110,8 +136,8 @@ describe 'HotCoffee', ->
 
     it 'should exit the process with 0', ->
       @hotcoffee.onSIGINT()
-      @exit.calledOnce.should.be.ok
-      @exit.calledWith(0).should.be.ok
+      @process.exit.calledOnce.should.be.ok
+      @process.exit.calledWith(0).should.be.ok
 
 
   describe 'merge(dest, source)', ->
@@ -147,6 +173,13 @@ describe 'HotCoffee', ->
       arr.should.have.lengthOf 3
       arr[i].should.equal(expected[i]) for i in [0..2]
 
+    it 'should leave out the extension if there is one', ->
+      extension = '.json'
+      @req.url = @req.url+extension
+      expected = ['turtles', 'name', 'Donatello']
+      arr = @hotcoffee.parseURL @req.url
+      arr[2].should.equal 'Donatello'
+
 
   describe 'parseBody(req, done)', ->
 
@@ -155,6 +188,23 @@ describe 'HotCoffee', ->
         body.should.have.property 'hello', 'world'
         done err
       @req.send 'hello=world'
+
+  describe 'mapResult(res, result)', ->
+
+    it 'should execute the right format function from HTTP accept header', ->
+      @mygreatformat.reset()
+      @hotcoffee.accept @format
+      @res.req.headers['accept'] = 'text/mygreatformat'
+      @hotcoffee.mapResult @res, @hotcoffee.db.resource1
+      @mygreatformat.calledOnce.should.be.ok
+
+    it 'should execute the right format function from file extension', ->
+      @mygreatformat.reset()
+      @hotcoffee.accept @format
+      @req.url = @req.url+'.mgf'
+      @req.extension = @hotcoffee.getExtension @req.url
+      @hotcoffee.mapResult @res, @hotcoffee.db.resource1
+      @mygreatformat.calledOnce.should.be.ok
 
 
   describe 'onGET(req, res)', ->

@@ -20,3 +20,4 @@ node_modules
 
 cov.html
 .coveralls.yml
+test/mocha.opts
