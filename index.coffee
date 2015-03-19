@@ -80,6 +80,12 @@ class Hotcoffee extends EventEmitter
       body += data
     req.on 'end', ->
       body = qs.parse body
+      # try to parse JSON
+      for k, v of body
+        try
+          body[k] = JSON.parse v
+        catch error
+
       done null, body
 
   onGET: (req, res)->
