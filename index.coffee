@@ -2,6 +2,7 @@ http = require 'http'
 URL = require 'url'
 qs = require 'querystring'
 path = require 'path'
+bunyan = require 'bunyan'
 EventEmitter = require('events').EventEmitter
 
 class Hotcoffee extends EventEmitter
@@ -22,6 +23,7 @@ class Hotcoffee extends EventEmitter
     @init config
 
   init: (@config={}, done)->
+    @log = @config.log || bunyan.createLogger name: 'hotcoffee'
     @process = @config.process or process
     @process.setMaxListeners 0
     @config.port = @process.env.PORT or @config?.port or 1337
@@ -39,6 +41,7 @@ class Hotcoffee extends EventEmitter
   use: (fn, opts)=>
     plugin = fn @, opts
     @plugins[plugin.name] = plugin
+    @logPluginEvents plugin
     @emit 'use', fn, opts
     return @
 
@@ -186,6 +189,16 @@ class Hotcoffee extends EventEmitter
     @server.close()
     @emit 'stop'
     return @
+
+  logPluginEvents: (plugin)->
+    unless plugin.on?
+      @log.warn {plugin: plugin.name}, "not a event emitter"
+      return
+
+    plugin.on 'info', (args...) =>
+      @log.info {plugin: plugin.name}, args...
+    plugin.on 'error', (args...)=>
+      @log.info {plugin: plugin.name}, args...
 
 module.exports = (config)->
   return new Hotcoffee config
