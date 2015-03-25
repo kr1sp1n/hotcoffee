@@ -181,8 +181,9 @@ class Hotcoffee extends EventEmitter
       res.end 'Method not supported.\n'
 
   start: ->
-    @server.listen @config.port
-    @emit 'start'
+    @server.listen @config.port, =>
+      @log.info {port: @config.port}, "server started"
+      @emit 'start'
     return @
 
   stop: ->

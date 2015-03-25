@@ -66,6 +66,7 @@ describe 'Hotcoffee', ->
     beforeEach ->
       @config =
         port: 8888
+        log: @log
 
     it 'should initialize with a valid config', (done)->
       @hotcoffee.init @config, (err)=>
@@ -397,6 +398,14 @@ describe 'Hotcoffee', ->
 
 
   describe 'start()', ->
+    beforeEach ->
+      @hotcoffee.server.listen.callsArg 1
+
+    it 'should emit the running port', (done) ->
+      @hotcoffee.on 'start', =>
+        @log.info.calledWith({port: 1337}, "server started").should.be.true
+        done()
+      @hotcoffee.start()
 
     it 'should emit a "start" event', (done)->
       @hotcoffee.on 'start', ->
