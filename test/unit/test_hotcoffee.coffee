@@ -27,7 +27,12 @@ describe 'Hotcoffee', ->
       setHeader: sinon.stub()
       req: @req
 
-    @hotcoffee = require("#{__dirname}/../../index")(process: @process)
+    @log =
+      info: sinon.stub()
+      error: sinon.stub()
+      warn: sinon.stub()
+
+    @hotcoffee = require("#{__dirname}/../../index")(process: @process, log: @log)
     @hotcoffee.server =
       listen: sinon.stub()
       close: sinon.stub()
@@ -41,7 +46,10 @@ describe 'Hotcoffee', ->
       resource2: []
 
     @plugin = (app, opts)=>
-      return name: 'Superplugin', opts: opts
+      plugin = new EventEmitter()
+      plugin.name = 'Superplugin'
+      plugin.opts = opts
+      return plugin
 
     @mygreatformat.reset() if @mygreatformat?.reset?
 
@@ -58,6 +66,7 @@ describe 'Hotcoffee', ->
     beforeEach ->
       @config =
         port: 8888
+        log: @log
 
     it 'should initialize with a valid config', (done)->
       @hotcoffee.init @config, (err)=>
@@ -69,7 +78,6 @@ describe 'Hotcoffee', ->
         config.should.equal @config
         done null
       @hotcoffee.init @config
-
 
   describe 'use(fn, opts)', ->
 
@@ -85,6 +93,24 @@ describe 'Hotcoffee', ->
         opts.should.equal options
         done null
       @hotcoffee.use @plugin, options
+
+    it 'should log info events from the plugin', ->
+      @hotcoffee.use @plugin
+      @hotcoffee.plugins['Superplugin'].emit 'info', 'info event'
+      @log.info.calledOnce.should.be.true
+      @log.info.calledWith({plugin: 'Superplugin'}, 'info event').should.be.true
+
+    it 'should log error events from the plugin', ->
+      @hotcoffee.use @plugin
+      @hotcoffee.plugins['Superplugin'].emit 'error', 'error event'
+      @log.error.calledOnce.should.be.true
+      @log.error.calledWith({plugin: 'Superplugin'}, 'error event').should.be.true
+
+    it 'should not try to log for non emit plugins', ->
+      @hotcoffee.use (app, config) ->
+        return {name: 'test'}
+      @log.warn.calledOnce.should.be.true
+      @log.warn.calledWith({plugin: 'test'}, 'not an event emitter').should.be.true
 
   describe 'accept(format)', ->
 
@@ -372,6 +398,14 @@ describe 'Hotcoffee', ->
 
 
   describe 'start()', ->
+    beforeEach ->
+      @hotcoffee.server.listen.callsArg 1
+
+    it 'should emit the running port', (done) ->
+      @hotcoffee.on 'start', =>
+        @log.info.calledWith({port: 1337}, "server started").should.be.true
+        done()
+      @hotcoffee.start()
 
     it 'should emit a "start" event', (done)->
       @hotcoffee.on 'start', ->
