@@ -21,8 +21,15 @@
     "simple",
     "notepad"
   ],
-  "author": "kr1sp1n",
-  "license": "BSD",
+  "author": {
+    "name": "Krispin Schulz",
+    "email": "krispinone@gmail.com",
+    "url": "http://kr1sp1n.io"
+  },
+  "contributors": [
+    "Patrick Müller <dev@mupat.net>"
+  ],
+  "license": "MIT",
   "readmeFilename": "README.md",
   "gitHead": "4771857c4c0d40b1a8e5945e66a717ad049d6b2e",
   "dependencies": {
