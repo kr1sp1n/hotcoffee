@@ -103,14 +103,14 @@ describe 'Hotcoffee', ->
     it 'should log error events from the plugin', ->
       @hotcoffee.use @plugin
       @hotcoffee.plugins['Superplugin'].emit 'error', 'error event'
-      @log.info.calledOnce.should.be.true
-      @log.info.calledWith({plugin: 'Superplugin'}, 'error event').should.be.true
+      @log.error.calledOnce.should.be.true
+      @log.error.calledWith({plugin: 'Superplugin'}, 'error event').should.be.true
 
     it 'should not try to log for non emit plugins', ->
       @hotcoffee.use (app, config) ->
         return {name: 'test'}
       @log.warn.calledOnce.should.be.true
-      @log.warn.calledWith({plugin: 'test'}, 'not a event emitter').should.be.true
+      @log.warn.calledWith({plugin: 'test'}, 'not an event emitter').should.be.true
 
   describe 'accept(format)', ->
 

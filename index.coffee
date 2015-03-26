@@ -193,13 +193,13 @@ class Hotcoffee extends EventEmitter
 
   logPluginEvents: (plugin)->
     unless plugin.on?
-      @log.warn {plugin: plugin.name}, "not a event emitter"
+      @log.warn {plugin: plugin.name}, "not an event emitter"
       return
 
     plugin.on 'info', (args...) =>
       @log.info {plugin: plugin.name}, args...
     plugin.on 'error', (args...)=>
-      @log.info {plugin: plugin.name}, args...
+      @log.error {plugin: plugin.name}, args...
 
 module.exports = (config)->
   return new Hotcoffee config
