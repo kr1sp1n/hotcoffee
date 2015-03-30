@@ -9,6 +9,8 @@ REST API that saves everything you can imagine.
 You just think about a collection name and add an item to it by sending a POST request with body data.
 Then you can manipulate items of a collection.
 
+You need [Node.js](https://nodejs.org/) to run the server locally.
+You can install it via [nvm](https://github.com/creationix/nvm).
 
 Install
 -----------------------------
