@@ -4,6 +4,7 @@ qs = require 'querystring'
 path = require 'path'
 bunyan = require 'bunyan'
 EventEmitter = require('events').EventEmitter
+{flatten} = require('coffee-script').helpers # helpers for free
 
 class Hotcoffee extends EventEmitter
   constructor: (config)->
@@ -12,6 +13,8 @@ class Hotcoffee extends EventEmitter
       'post': @onPOST.bind @
       'patch': @onPATCH.bind @
       'delete': @onDELETE.bind @
+
+    @hooks = []
 
     # default output formats
     default_output = (res, result)->
@@ -168,6 +171,15 @@ class Hotcoffee extends EventEmitter
     @mapResult res, result
     @emit 'render', res, result
 
+  hook: (fn)->
+    @hooks.push fn
+
+  runHooks: (req, res, arr, done)->
+    return done() if arr.length is 0
+    arr.shift() req, res, (err)=>
+      return done err if err
+      @runHooks req, res, arr, done
+
   onRequest: (req, res)->
     @emit 'request', req, res
     @writeHead res
@@ -175,10 +187,15 @@ class Hotcoffee extends EventEmitter
     req.resource = @getResource req.url
     req.extension = @getExtension req.url
     method = req.method.toLowerCase()
-    if @methods[method]?
-      @methods[method] req, res
-    else
-      res.end 'Method not supported.\n'
+
+    @log.info req.method, req.url
+
+    @runHooks req, res, [].concat(@hooks...), (err)=>
+      return res.end err.message if err
+      if @methods[method]?
+        @methods[method] req, res
+      else
+        res.end 'Method not supported.\n'
 
   start: ->
     @server.listen @config.port, =>
