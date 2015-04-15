@@ -396,6 +396,14 @@ describe 'Hotcoffee', ->
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
 
+    it 'should respond any error from a hook', ->
+      errorMessage = 'Any error'
+      @hotcoffee.hook (req, res, next)->
+        next new Error errorMessage
+      @hotcoffee.onRequest @req, @res
+      @res.end.calledOnce.should.be.ok
+      @res.end.calledWith(errorMessage).should.be.ok
+
 
   describe 'start()', ->
     beforeEach ->
@@ -425,3 +433,45 @@ describe 'Hotcoffee', ->
       @hotcoffee.on 'stop', ->
         done null
       @hotcoffee.stop()
+
+
+  describe 'hook(fn)', ->
+
+    it 'should add a function to hooks', ->
+      fn = (req, res, next)->
+      @hotcoffee.hook fn
+      @hotcoffee.hooks.length.should.equal 1
+
+
+  describe 'runHooks(req, res, arr, done)', (done)->
+
+    it 'should run all passed hooks', (done)->
+      counter = 0
+      hook1 = (req, res, next)->
+        counter+=1
+        next null
+      hook2 = (req, res, next)->
+        counter+=1
+        next null
+
+      hooks = [hook1, hook2]
+      @hotcoffee.runHooks @req, @res, hooks, (err)->
+        counter.should.equal 2
+        done err
+
+    it 'should propagate any error inside a hook', (done)->
+      err1 = new Error 'An error'
+      hook1 = (req, res, next)-> next null
+      hook2 = (req, res, next)-> next err1
+      hooks = [hook1, hook2]
+      @hotcoffee.runHooks @req, @res, hooks, (err)->
+        err.should.equal err1
+        done null
+
+    it 'should stop executing further hooks if any error occurs', (done)->
+      hook1 = (req, res, next)-> next new Error('Any error')
+      hook2 = sinon.spy (req, res, next)-> next null
+      hooks = [hook1, hook2]
+      @hotcoffee.runHooks @req, @res, hooks, (err)->
+        hook2.called.should.not.be.ok
+        done null
