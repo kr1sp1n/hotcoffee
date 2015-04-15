@@ -4,8 +4,12 @@ should = require 'should'
 sinon = require 'sinon'
 EventEmitter = require('events').EventEmitter
 
-toOutput = (obj)->
-  JSON.stringify(obj, null, 2) + '\n'
+toOutput = (result, href)->
+  output = {
+    items: result
+    href: href
+  }
+  JSON.stringify(output, null, 2) + '\n'
 
 describe 'Hotcoffee', ->
   beforeEach ->
@@ -22,6 +26,7 @@ describe 'Hotcoffee', ->
       @req.emit 'end'
 
     @res =
+      endpoint: 'http://localhost:1337'
       end: sinon.stub()
       writeHead: sinon.stub()
       setHeader: sinon.stub()
@@ -39,9 +44,9 @@ describe 'Hotcoffee', ->
 
     @hotcoffee.db =
       resource1: [
-        { id: 1 }
-        { id: 2, name: 'hello' }
-        { id: 3, name: 'world' }
+        { type: 'resource1', props: { id: 1 }, links: [] }
+        { type: 'resource1', props: { id: 2, name: 'hello' }, links: [] }
+        { type: 'resource1', props: { id: 3, name: 'world' }, links: [] }
       ]
       resource2: []
 
@@ -170,18 +175,19 @@ describe 'Hotcoffee', ->
 
     beforeEach ->
       @dest =
-        test: 0
+        props:
+          test: 0
       @source =
         test: 1
         hello: 'world'
 
-    it 'should replace all values from dest if source has the same keys', ->
+    it 'should replace all `props` values from dest if source has the same keys', ->
       @hotcoffee.merge @dest, @source
-      @dest.test.should.equal 1
+      @dest.props.test.should.equal 1
 
     it 'should add new keys to dest that are present in source', ->
       @hotcoffee.merge @dest, @source
-      @dest.should.have.property 'hello', @source['hello']
+      @dest.props.should.have.property 'hello', @source['hello']
 
 
   describe 'writeHead(res)', ->
@@ -244,8 +250,8 @@ describe 'Hotcoffee', ->
 
     it 'should response all items of a resource type', ->
       resource = 'resource1'
-      output = toOutput @hotcoffee.db[resource]
       @req.url = '/' + resource
+      output = toOutput @hotcoffee.db[resource], @res.endpoint + @req.url
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
@@ -253,8 +259,8 @@ describe 'Hotcoffee', ->
     it 'should response items that have a specific key', ->
       resource = 'resource1'
       key = 'name'
-      output = toOutput (@hotcoffee.db[resource].filter (x)-> x[key]?)
       @req.url = "/#{resource}/#{key}"
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> x.props[key]?), @res.endpoint + @req.url
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
@@ -263,15 +269,16 @@ describe 'Hotcoffee', ->
       resource = 'resource1'
       key = 'name'
       value = 'hello'
-      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
       @req.url = "/#{resource}/#{key}/#{value}"
+      output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x.props[key])==String(value)), @res.endpoint + @req.url
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
 
     it 'should populate all resources if req.url == "/"', ->
-      output = toOutput (name for name, val of @hotcoffee.db)
+      resources = ({ type:'resource', href:[@res.endpoint, name].join '/', props: { name: name } } for name of @hotcoffee.db)
       @req.url = '/'
+      output = toOutput resources, @res.endpoint + @req.url
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
@@ -280,8 +287,8 @@ describe 'Hotcoffee', ->
   describe 'onPOST(req, res)', ->
 
     it 'should response an empty array if resource name is empty', (done)->
-      output = toOutput []
       @req.url = "/"
+      output = toOutput [], @res.endpoint + @req.url
       @hotcoffee.on 'render', (res, result)=>
         result.should.be.empty
         @res.end.calledOnce.should.be.ok
@@ -290,14 +297,14 @@ describe 'Hotcoffee', ->
       @hotcoffee.onPOST @req, @res
       @req.send 'hello=world'
 
-    it 'should emit a "POST" event with resource and body', (done)->
+    it 'should emit a "POST" event with resource and item', (done)->
       resource = 'resource2'
       @req.url = "/#{resource}"
       @hotcoffee.db[resource].should.be.empty
-      @hotcoffee.on 'POST', (resource_name, body)=>
+      @hotcoffee.on 'POST', (resource_name, item)=>
         resource.should.equal resource_name
         @hotcoffee.db[resource].should.have.lengthOf 1
-        body.should.have.property 'hello', 'world'
+        item.props.should.have.property 'hello', 'world'
         done null
       @hotcoffee.onPOST @req, @res
       @req.send 'hello=world'
@@ -316,9 +323,9 @@ describe 'Hotcoffee', ->
       @req.send 'hello=world'
 
     it 'should create an empty array if resource does not exist', (done)->
-      resource = 'turtles'
-      output = toOutput []
+      resource = 'turtle'
       @req.url = "/#{resource}"
+      output = toOutput [], @res.endpoint + @req.url
       @hotcoffee.on 'render', (res, result)=>
         result.should.be.empty
         @res.end.calledOnce.should.be.ok
@@ -334,7 +341,7 @@ describe 'Hotcoffee', ->
       @req.url = "/#{resource}/#{key}/#{value}"
       @hotcoffee.on 'render', (res, result)=>
         result.should.have.lengthOf 1
-        output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x[key])==String(value))
+        output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x.props[key])==String(value)), @res.endpoint + @req.url
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
@@ -352,7 +359,7 @@ describe 'Hotcoffee', ->
       @hotcoffee.on 'DELETE', (resource_name, result)->
         resource_name.should.equal resource
         result.should.have.lengthOf 1
-        result[0].should.have.property 'id', value
+        result[0].props.should.have.property 'id', value
         done null
       @hotcoffee.onDELETE @req, @res
 
@@ -360,7 +367,7 @@ describe 'Hotcoffee', ->
       resource = 'resource1'
       @hotcoffee.db[resource].should.have.lengthOf 3
       @req.url = "/#{resource}"
-      output = toOutput @hotcoffee.db[resource]
+      output = toOutput @hotcoffee.db[resource], @res.endpoint + @req.url
       @hotcoffee.on 'render', (res, result)=>
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
@@ -370,8 +377,8 @@ describe 'Hotcoffee', ->
 
     it 'should create an empty array if resource does not exist', (done)->
       resource = 'turtles'
-      output = toOutput []
       @req.url = "/#{resource}"
+      output = toOutput [], @res.endpoint + @req.url
       @hotcoffee.on 'render', (res, result)=>
         result.should.be.empty
         @res.end.calledOnce.should.be.ok

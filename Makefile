@@ -1,8 +1,10 @@
 .PHONY: test
 
 MODULE_DIR = ./node_modules
+EXAMPLE_DIR = ./example
 BIN_DIR = $(MODULE_DIR)/.bin
 MOCHA_BIN = $(BIN_DIR)/mocha
+COFFEE_BIN = $(BIN_DIR)/coffee
 TEST_UNIT_DIR = ./test/unit
 MOCHA_REPORTER = spec
 
@@ -11,6 +13,9 @@ install:
 
 clean:
 	rm -rf ./node_modules
+
+simple-server:
+	$(COFFEE_BIN) $(EXAMPLE_DIR)/simple_server.coffee
 
 test: test-unit
 

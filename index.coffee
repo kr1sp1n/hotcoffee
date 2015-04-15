@@ -18,7 +18,13 @@ class Hotcoffee extends EventEmitter
 
     # default output formats
     default_output = (res, result)->
-      res.end JSON.stringify(result, null, 2) + '\n'
+      output = {
+        items: result
+        href: res.endpoint+res.req.url
+      }
+      res.setHeader 'Content-Type', 'application/json'
+      str = JSON.stringify(output, null, 2) + '\n'
+      res.end str
     @formats =
       json: default_output
       'application/json': default_output
@@ -63,10 +69,10 @@ class Hotcoffee extends EventEmitter
     @process.exit(0)
 
   merge: (dest, source)->
-    for key, value of dest
-      dest[key] = source[key] if source[key]?
+    for key, value of dest.props
+      dest.props[key] = source[key] if source[key]?
     for key, value of source
-      dest[key] = source[key]
+      dest.props[key] = source[key]
 
   writeHead: (res)->
     res.setHeader 'Access-Control-Allow-Origin', '*'
@@ -99,12 +105,12 @@ class Hotcoffee extends EventEmitter
     [ resource, key, value ] = @parseURL req.url
     result = []
     if @isRoot req.url
-      result = (name for name, val of @db)
+      result = ({ type:'resource', href:[res.endpoint, name].join '/', props: { name: name } } for name of @db)
     else
       if @db[resource]?
         result = @db[resource]
-        result = result.filter((x) -> x[key]?) if key? and key.length > 0
-        result = result.filter((x) -> String(x[key]) == String(value)) if value?
+        result = result.filter((x) -> x.props[key]?) if key? and key.length > 0
+        result = result.filter((x) -> String(x.props[key]) == decodeURIComponent(String(value))) if value?
     @render res, result
 
   onPOST: (req, res)->
@@ -112,9 +118,10 @@ class Hotcoffee extends EventEmitter
     @db[resource] ?= []
     @parseBody req, (err, body)=>
       if resource != ""
-        @db[resource].push body
-        @render res, body
-        @emit 'POST', resource, body
+        item = { type: resource, props: body, links: [] }
+        @db[resource].push item
+        @render res, [item]
+        @emit 'POST', resource, item
       else
         @render res, []
 
@@ -122,8 +129,8 @@ class Hotcoffee extends EventEmitter
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
     result = @db[resource]
-    result = result.filter((x) -> x[key]?) if key?
-    result = result.filter((x) -> String(x[key]) == String(value)) if value?
+    result = result.filter((x) -> x.props[key]?) if key?
+    result = result.filter((x) -> String(x.props[key]) == decodeURIComponent(String(value))) if value?
     @parseBody req, (err, body)=>
       @merge k, body for k in result
       @emit 'PATCH', resource, result, body
@@ -139,7 +146,7 @@ class Hotcoffee extends EventEmitter
       delete @db[resource]
     else
       # delete items
-      @db[resource] = @db[resource].filter((x) -> (String(x[key]) != String(value)) or (!result.push x))
+      @db[resource] = @db[resource].filter((x) -> (String(x.props[key]) != decodeURIComponent(String(value))) or (!result.push x))
     @emit 'DELETE', resource, result
     @render res, result
 
