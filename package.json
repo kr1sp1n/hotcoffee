@@ -1,6 +1,6 @@
 {
   "name": "hotcoffee",
-  "version": "0.1.4",
+  "version": "0.1.3",
   "description": "Brew you some hot micro servers",
   "main": "index.coffee",
   "scripts": {
