@@ -1,4 +1,4 @@
-# file: test/unit/test_hotcoffee
+# file: test/unit/test_hotcoffee.coffee
 
 should = require 'should'
 sinon = require 'sinon'

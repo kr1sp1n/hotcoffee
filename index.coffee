@@ -4,7 +4,6 @@ qs = require 'querystring'
 path = require 'path'
 bunyan = require 'bunyan'
 EventEmitter = require('events').EventEmitter
-{flatten} = require('coffee-script').helpers # helpers for free
 
 class Hotcoffee extends EventEmitter
   constructor: (config)->
