@@ -32,6 +32,8 @@ describe 'Hotcoffee', ->
       setHeader: sinon.stub()
       req: @req
 
+    @links = links = [ { rel: 'friend', type: 'application/json', href: [@res.endpoint, 'id', 3].join('/') } ]
+
     @log =
       info: sinon.stub()
       error: sinon.stub()
@@ -347,6 +349,33 @@ describe 'Hotcoffee', ->
         done null
       @hotcoffee.onPATCH @req, @res
       @req.send 'name=goodbye'
+
+
+  describe 'onPUT(req, res)', ->
+
+    it 'should link resources to other resources', (done)->
+      resource = 'resource1'
+      key = 'id'
+      value = 2
+      @req.url = "/#{resource}/#{key}/#{value}"
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.have.lengthOf 1
+        result[0].links.should.eql @links
+        done null
+      @hotcoffee.onPUT @req, @res
+      @req.send "links=#{JSON.stringify(@links)}"
+
+    it 'should create an empty array if resource does not exist', (done)->
+      resource = 'does_not_exist'
+      @req.url = "/#{resource}"
+      output = toOutput [], @res.endpoint + @req.url
+      @hotcoffee.on 'render', (res, result)=>
+        result.should.be.empty
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(output).should.be.ok
+        done null
+      @hotcoffee.onPUT @req, @res
+      @req.send "links=#{JSON.stringify(@links)}"
 
 
   describe 'onDELETE(req, res)', ->

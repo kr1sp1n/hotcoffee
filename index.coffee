@@ -11,6 +11,7 @@ class Hotcoffee extends EventEmitter
       'get': @onGET.bind @
       'post': @onPOST.bind @
       'patch': @onPATCH.bind @
+      'put': @onPUT.bind @
       'delete': @onDELETE.bind @
 
     @hooks = []
@@ -85,18 +86,22 @@ class Hotcoffee extends EventEmitter
       x[x.length-1] = last.split('.')[0]
     return x
 
+  filterResult: (result, filterBy)->
+    {resource, key, value} = filterBy
+    result = result.filter((x) -> x.props[key]?) if key? and key.length > 0
+    result = result.filter((x) -> String(x.props[key]) == decodeURIComponent(String(value))) if value?
+    return result
+
   parseBody: (req, done)->
     body = ''
     req.on 'data', (data)->
       body += data
     req.on 'end', ->
       body = qs.parse body
-      # try to parse JSON
       for k, v of body
         try
           body[k] = JSON.parse v
         catch error
-
       done null, body
 
   onGET: (req, res)->
@@ -107,9 +112,7 @@ class Hotcoffee extends EventEmitter
       result = ({ type:'resource', href:[res.endpoint, name].join '/', props: { name: name } } for name of @db)
     else
       if @db[resource]?
-        result = @db[resource]
-        result = result.filter((x) -> x.props[key]?) if key? and key.length > 0
-        result = result.filter((x) -> String(x.props[key]) == decodeURIComponent(String(value))) if value?
+        result = @filterResult @db[resource], { resource: resource, key: key, value: value}
     @render res, result
 
   onPOST: (req, res)->
@@ -127,12 +130,20 @@ class Hotcoffee extends EventEmitter
   onPATCH: (req, res)->
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
-    result = @db[resource]
-    result = result.filter((x) -> x.props[key]?) if key?
-    result = result.filter((x) -> String(x.props[key]) == decodeURIComponent(String(value))) if value?
+    result = @filterResult @db[resource], { resource: resource, key: key, value: value}
     @parseBody req, (err, body)=>
       @merge k, body for k in result
       @emit 'PATCH', resource, result, body
+      @render res, result
+
+  onPUT: (req, res)->
+    [ resource, key, value ] = @parseURL req.url
+    @db[resource] ?= []
+    result = @filterResult @db[resource], { resource: resource, key: key, value: value}
+    @parseBody req, (err, body)=>
+      for item in result
+        item.links.push link for link in body.links if body.links?
+      @emit 'PUT', resource, result, body
       @render res, result
 
   onDELETE: (req, res)->
