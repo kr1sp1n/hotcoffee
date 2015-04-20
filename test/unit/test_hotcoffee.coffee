@@ -278,7 +278,7 @@ describe 'Hotcoffee', ->
       @res.end.calledWith(output).should.be.ok
 
     it 'should populate all resources if req.url == "/"', ->
-      resources = ({ type:'resource', href:[@res.endpoint, name].join '/', props: { name: name } } for name of @hotcoffee.db)
+      resources = ({ type:'resource', href:[@res.endpoint, name].join('/'), props: { name: name } } for name of @hotcoffee.db)
       @req.url = '/'
       output = toOutput resources, @res.endpoint + @req.url
       @hotcoffee.onGET @req, @res

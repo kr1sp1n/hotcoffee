@@ -109,7 +109,7 @@ class Hotcoffee extends EventEmitter
     [ resource, key, value ] = @parseURL req.url
     result = []
     if @isRoot req.url
-      result = ({ type:'resource', href:[res.endpoint, name].join '/', props: { name: name } } for name of @db)
+      result = ({ type:'resource', href:[res.endpoint, name].join('/'), props: { name: name } } for name of @db)
     else
       if @db[resource]?
         result = @filterResult @db[resource], { resource: resource, key: key, value: value}
