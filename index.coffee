@@ -44,6 +44,8 @@ class Hotcoffee extends EventEmitter
     @plugins = {} # list of plugins
     @process.once 'exit', @onExit.bind @
     @process.once 'SIGINT', @onSIGINT.bind @
+    @on 'error', (err)=>
+      @log.error err.message
     @emit 'init', @config
     return done(null) if done?
 
@@ -197,7 +199,6 @@ class Hotcoffee extends EventEmitter
       @runHooks req, res, arr, done
 
   onRequest: (req, res)->
-    @emit 'request', req, res
     @writeHead res
     @extendResponse req, res
     req.resource = @getResource req.url
@@ -207,11 +208,17 @@ class Hotcoffee extends EventEmitter
     @log.info req.method, req.url
 
     @runHooks req, res, [].concat(@hooks...), (err)=>
-      return res.end err.message if err
-      if @methods[method]?
-        @methods[method] req, res
+      if err
+        res.end err.message
+        @emit 'error', err
       else
-        res.end 'Method not supported.\n'
+        if @methods[method]?
+          @methods[method] req, res
+        else
+          err = new Error('Method not supported.')
+          res.end err.message
+          @emit 'error', err
+        @emit 'request', req, res
 
   start: ->
     @server.listen @config.port, =>

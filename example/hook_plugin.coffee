@@ -1,13 +1,13 @@
-# file: example/hook_plugin
+# file: example/hook_plugin.coffee
 
 module.exports = (app, config)->
 
 	app.hook (req, res, next)->
-		console.log "1st hook with 1s delay"
-		setTimeout next, 1000
+		app.log.info '1st hook with 500 ms delay'
+		setTimeout next, 500
 
 	app.hook (req, res, next)->
-		console.log "2nd hook with error"
+		app.log.info '2nd hook with error'
 		next new Error("BAM!")
 
 	return name: 'My 1st hook plugin'

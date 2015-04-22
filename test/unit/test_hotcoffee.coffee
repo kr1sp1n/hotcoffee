@@ -21,6 +21,7 @@ describe 'Hotcoffee', ->
     @req.url = "/turtles/name/Donatello"
     @req.end = sinon.stub()
     @req.headers = {}
+    @req.body = {}
     @req.send = (data)=>
       @req.emit 'data', data
       @req.emit 'end'
@@ -218,7 +219,7 @@ describe 'Hotcoffee', ->
   describe 'parseBody(req, done)', ->
 
     it 'should parse the body of a req stream to an object', (done)->
-      @hotcoffee.parseBody @req, (err, body)=>
+      @hotcoffee.parseBody @req, @res, (err, body)=>
         body.should.have.property 'hello', 'world'
         done err
       @req.send 'hello=world'
@@ -297,7 +298,7 @@ describe 'Hotcoffee', ->
         @res.end.calledWith(output).should.be.ok
         done null
       @hotcoffee.onPOST @req, @res
-      @req.send 'hello=world'
+      @req.send()
 
     it 'should emit a "POST" event with resource and item', (done)->
       resource = 'resource2'
@@ -308,6 +309,9 @@ describe 'Hotcoffee', ->
         @hotcoffee.db[resource].should.have.lengthOf 1
         item.props.should.have.property 'hello', 'world'
         done null
+      # simulate body parser that gets executed only in onRequest function
+      @req.body =
+        hello: 'world'
       @hotcoffee.onPOST @req, @res
       @req.send 'hello=world'
 
@@ -362,6 +366,9 @@ describe 'Hotcoffee', ->
         result.should.have.lengthOf 1
         result[0].links.should.eql @links
         done null
+      # simulate body parser
+      @req.body =
+        links: @links
       @hotcoffee.onPUT @req, @res
       @req.send "links=#{JSON.stringify(@links)}"
 
@@ -424,21 +431,28 @@ describe 'Hotcoffee', ->
         req.url.should.equal '/'
         done null
       @hotcoffee.onRequest @req, @res
+      @req.send()
 
-    it 'should respond an error if HTTP method is not supported', ->
+    it 'should respond an error if HTTP method is not supported', (done)->
       @req.method = 'STUPID'
-      output = "Method not supported.\n"
+      errorMessage = "Method not supported."
+      @hotcoffee.on 'error', (err)=>
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(errorMessage).should.be.ok
+        done null
       @hotcoffee.onRequest @req, @res
-      @res.end.calledOnce.should.be.ok
-      @res.end.calledWith(output).should.be.ok
+      @req.send()
 
-    it 'should respond any error from a hook', ->
+    it 'should respond any error from a hook', (done)->
       errorMessage = 'Any error'
       @hotcoffee.hook (req, res, next)->
         next new Error errorMessage
+      @hotcoffee.on 'error', (err)=>
+        @res.end.calledOnce.should.be.ok
+        @res.end.calledWith(errorMessage).should.be.ok
+        done null
       @hotcoffee.onRequest @req, @res
-      @res.end.calledOnce.should.be.ok
-      @res.end.calledWith(errorMessage).should.be.ok
+      @req.send()
 
 
   describe 'start()', ->
@@ -475,8 +489,9 @@ describe 'Hotcoffee', ->
 
     it 'should add a function to hooks', ->
       fn = (req, res, next)->
+      hooksBefore = @hotcoffee.hooks.length
       @hotcoffee.hook fn
-      @hotcoffee.hooks.length.should.equal 1
+      @hotcoffee.hooks.length.should.equal hooksBefore + 1
 
 
   describe 'runHooks(req, res, arr, done)', (done)->
