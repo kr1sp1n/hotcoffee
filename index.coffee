@@ -122,8 +122,9 @@ class Hotcoffee extends EventEmitter
   onPOST: (req, res)->
     [ resource, key, value ] = @parseURL req.url
     @db[resource] ?= []
+    req.links ?= []
     if resource != ""
-      item = { type: resource, props: req.body, links: [] }
+      item = { type: resource, props: req.body, links: req.links }
       @db[resource].push item
       @render res, [item]
       @emit 'POST', resource, item
