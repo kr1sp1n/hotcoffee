@@ -1,4 +1,4 @@
-Available Plugins
+Known Plugins
 ==================
 
 * [hotcoffee-mongodb](https://github.com/kr1sp1n/hotcoffee-mongodb) - Persistance via [mongoDB](https://www.mongodb.org/)
