@@ -2,7 +2,7 @@
   "name": "hotcoffee",
   "version": "0.3.0",
   "description": "Brew you some hot micro servers",
-  "main": "index.coffee",
+  "main": "index.js",
   "scripts": {
     "test": "make test"
   },
