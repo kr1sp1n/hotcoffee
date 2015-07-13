@@ -6,9 +6,11 @@ EventEmitter = require('events').EventEmitter
 
 toOutput = (result, href)->
   output = {
+    success: true
     items: result
     href: href
   }
+  output.success = false if result? and result.length > 0 and result[0]['type'] == 'error'
   JSON.stringify(output, null, 2) + '\n'
 
 describe 'Hotcoffee', ->
@@ -445,11 +447,12 @@ describe 'Hotcoffee', ->
 
     it 'should respond any error from a hook', (done)->
       errorMessage = 'Any error'
+      output = toOutput [{ type: 'error', props: { message: errorMessage }}], @res.endpoint + @req.url
       @hotcoffee.hook (req, res, next)->
         next new Error errorMessage
       @hotcoffee.on 'error', (err)=>
         @res.end.calledOnce.should.be.ok
-        @res.end.calledWith(errorMessage).should.be.ok
+        @res.end.calledWith(output).should.be.ok
         done null
       @hotcoffee.onRequest @req, @res
       @req.send()

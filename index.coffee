@@ -20,16 +20,17 @@ class Hotcoffee extends EventEmitter
     # default output formats
     default_output = (res, result)->
       output = {
+        success: true
         items: result
         href: res.endpoint+res.req.url
       }
+      output.success = false if String(res.statusCode).match /^5|^4/
       res.setHeader 'Content-Type', 'application/json'
       str = JSON.stringify(output, null, 2) + '\n'
       res.end str
     @formats =
       json: default_output
       'application/json': default_output
-
     @init config
 
   init: (@config={}, done)->
@@ -210,7 +211,8 @@ class Hotcoffee extends EventEmitter
 
     @runHooks req, res, [].concat(@hooks...), (err)=>
       if err
-        res.end err.message
+        res.statusCode = if err.statusCode? then err.statusCode else 500
+        @render res, [ { type: 'error', props: { message: err.message } } ]
         @emit 'error', err
       else
         if @methods[method]?
