@@ -302,14 +302,14 @@ describe 'Hotcoffee', ->
       @hotcoffee.onPOST @req, @res
       @req.send()
 
-    it 'should emit a "POST" event with resource and item', (done)->
+    it 'should emit a "POST" event with req and res', (done)->
       resource = 'resource2'
       @req.url = "/#{resource}"
       @hotcoffee.db[resource].should.be.empty
-      @hotcoffee.on 'POST', (resource_name, item)=>
-        resource.should.equal resource_name
+      @hotcoffee.on 'POST', (req, res)=>
+        @hotcoffee.getResource(req.url).should.equal resource
         @hotcoffee.db[resource].should.have.lengthOf 1
-        item.props.should.have.property 'hello', 'world'
+        res.result[0].props.should.have.property 'hello', 'world'
         done null
       # simulate body parser that gets executed only in onRequest function
       @req.body =
@@ -320,12 +320,12 @@ describe 'Hotcoffee', ->
 
   describe 'onPATCH(req, res)', ->
 
-    it 'should emit a "PATCH" event with resource, result and body', (done)->
+    it 'should emit a "PATCH" event with req and res', (done)->
       resource = 'resource1'
       key = 'id'
       @req.url = "/#{resource}/#{key}"
-      @hotcoffee.on 'PATCH', (resource_name, result, body)->
-        resource_name.should.equal resource
+      @hotcoffee.on 'PATCH', (req, res)=>
+        @hotcoffee.getResource(req.url).should.equal resource
         done null
       @hotcoffee.onPATCH @req, @res
       @req.send 'hello=world'
@@ -389,15 +389,15 @@ describe 'Hotcoffee', ->
 
   describe 'onDELETE(req, res)', ->
 
-    it 'should emit a "DELETE" event with resource and result', (done)->
+    it 'should emit a "DELETE" event with req and res', (done)->
       resource = 'resource1'
       key = 'id'
       value = 3
       @req.url = "/#{resource}/#{key}/#{value}"
-      @hotcoffee.on 'DELETE', (resource_name, result)->
-        resource_name.should.equal resource
-        result.should.have.lengthOf 1
-        result[0].props.should.have.property 'id', value
+      @hotcoffee.on 'DELETE', (req, res)=>
+        @hotcoffee.getResource(req.url).should.equal resource
+        res.result.should.have.lengthOf 1
+        res.result[0].props.should.have.property 'id', value
         done null
       @hotcoffee.onDELETE @req, @res
 

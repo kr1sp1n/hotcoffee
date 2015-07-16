@@ -127,8 +127,9 @@ class Hotcoffee extends EventEmitter
     if resource != ""
       item = { type: resource, props: req.body, links: req.links }
       @db[resource].push item
+      res.result = [item]
       @render res, [item]
-      @emit 'POST', resource, item
+      @emit 'POST', req, res
     else
       @render res, []
 
@@ -137,8 +138,9 @@ class Hotcoffee extends EventEmitter
     @db[resource] ?= []
     result = @filterResult @db[resource], { resource: resource, key: key, value: value }
     @merge k, req.body for k in result
-    @emit 'PATCH', resource, result, req.body
+    res.result = result
     @render res, result
+    @emit 'PATCH', req, res
 
   onPUT: (req, res)->
     [ resource, key, value ] = @parseURL req.url
@@ -146,8 +148,9 @@ class Hotcoffee extends EventEmitter
     result = @filterResult @db[resource], { resource: resource, key: key, value: value }
     for item in result
       item.links.push link for link in req.body.links if req.body.links?
-    @emit 'PUT', resource, result, req.body
+    res.result = result
     @render res, result
+    @emit 'PUT', req, res
 
   onDELETE: (req, res)->
     [ resource, key, value ] = @parseURL req.url
@@ -160,8 +163,9 @@ class Hotcoffee extends EventEmitter
     else
       # delete items
       @db[resource] = @db[resource].filter((x) -> (String(x.props[key]) != decodeURIComponent(String(value))) or (!result.push x))
-    @emit 'DELETE', resource, result
+    res.result = result
     @render res, result
+    @emit 'DELETE', req, res
 
   extendResponse: (req, res)->
     res.req = req
