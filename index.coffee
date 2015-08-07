@@ -18,16 +18,20 @@ class Hotcoffee extends EventEmitter
     @hooks = [@parseBody]
 
     # default output formats
-    default_output = (res, result)->
+    default_output = (res)->
+      result = res.result.map (item)->
+        item.href = [res.endpoint, item.type, 'id', item.props.id].join '/' unless item.href?
+        return item
       output = {
         success: true
         items: result
-        href: res.endpoint+res.req.url
+        href: res.endpoint + res.req.url
       }
       output.success = false if String(res.statusCode).match /^5|^4/
       res.setHeader 'Content-Type', 'application/json'
       str = JSON.stringify(output, null, 2) + '\n'
       res.end str
+
     @formats =
       json: default_output
       'application/json': default_output
@@ -118,7 +122,8 @@ class Hotcoffee extends EventEmitter
     else
       if @db[resource]?
         result = @filterResult @db[resource], { resource: resource, key: key, value: value}
-    @render res, result
+    res.result = result
+    @render res
 
   onPOST: (req, res)->
     [ resource, key, value ] = @parseURL req.url
@@ -128,10 +133,10 @@ class Hotcoffee extends EventEmitter
       item = { type: resource, props: req.body, links: req.links }
       @db[resource].push item
       res.result = [item]
-      @render res, [item]
+      @render res
       @emit 'POST', req, res
     else
-      @render res, []
+      @render res
 
   onPATCH: (req, res)->
     [ resource, key, value ] = @parseURL req.url
@@ -139,7 +144,7 @@ class Hotcoffee extends EventEmitter
     result = @filterResult @db[resource], { resource: resource, key: key, value: value }
     @merge k, req.body for k in result
     res.result = result
-    @render res, result
+    @render res
     @emit 'PATCH', req, res
 
   onPUT: (req, res)->
@@ -149,7 +154,7 @@ class Hotcoffee extends EventEmitter
     for item in result
       item.links.push link for link in req.body.links if req.body.links?
     res.result = result
-    @render res, result
+    @render res
     @emit 'PUT', req, res
 
   onDELETE: (req, res)->
@@ -159,12 +164,12 @@ class Hotcoffee extends EventEmitter
     if resource? and not key?
       # delete collection
       result = @db[resource].slice(0) # clone array
-      delete @db[resource]
+      @db[resource] = []
     else
       # delete items
       @db[resource] = @db[resource].filter((x) -> (String(x.props[key]) != decodeURIComponent(String(value))) or (!result.push x))
     res.result = result
-    @render res, result
+    @render res
     @emit 'DELETE', req, res
 
   extendResponse: (req, res)->
@@ -180,7 +185,7 @@ class Hotcoffee extends EventEmitter
     [resource] = @parseURL url
     return resource
 
-  mapResult: (res, result)->
+  mapResult: (res)->
     if @formats?
       extension = res.req.extension
       accept = res.req.headers['accept']
@@ -189,11 +194,11 @@ class Hotcoffee extends EventEmitter
         format = extension
       else if @formats[accept]
         format = accept
-      @formats[format] res, result
+      @formats[format] res
 
-  render: (res, result)->
-    @mapResult res, result
-    @emit 'render', res, result
+  render: (res)->
+    @mapResult res
+    @emit 'render', res
 
   hook: (fn)->
     @hooks.push fn
@@ -209,6 +214,7 @@ class Hotcoffee extends EventEmitter
     @extendResponse req, res
     req.resource = @getResource req.url
     req.extension = @getExtension req.url
+    res.result = []
     method = req.method.toLowerCase()
 
     @log.info req.method, req.url
@@ -216,7 +222,8 @@ class Hotcoffee extends EventEmitter
     @runHooks req, res, [].concat(@hooks...), (err)=>
       if err
         res.statusCode = if err.statusCode? then err.statusCode else 500
-        @render res, [ { type: 'error', props: { message: err.message } } ]
+        res.result = [ { type: 'error', props: { message: err.message } } ]
+        @render res
         @emit 'error', err
       else
         if @methods[method]?

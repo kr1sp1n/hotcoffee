@@ -4,7 +4,15 @@ should = require 'should'
 sinon = require 'sinon'
 EventEmitter = require('events').EventEmitter
 
+endpoint = 'http://localhost:1337'
+
 toOutput = (result, href)->
+  if result? and result.length > 0
+    resource = result[0].type
+    result = result.map (item)->
+      item.href = [endpoint, resource, 'id', item.props.id].join '/' unless item.href
+      return item
+
   output = {
     success: true
     items: result
@@ -29,7 +37,8 @@ describe 'Hotcoffee', ->
       @req.emit 'end'
 
     @res =
-      endpoint: 'http://localhost:1337'
+      endpoint: endpoint
+      result: []
       end: sinon.stub()
       writeHead: sinon.stub()
       setHeader: sinon.stub()
@@ -63,8 +72,8 @@ describe 'Hotcoffee', ->
 
     @mygreatformat.reset() if @mygreatformat?.reset?
 
-    @mygreatformat = sinon.spy (res, result)->
-      output = result.map (x)-> "#{JSON.stringify(x)}"
+    @mygreatformat = sinon.spy (res)->
+      output = res.result.map (x)-> "#{JSON.stringify(x)}"
       res.setHeader 'Content-Type', 'text/mygreatformat; charset=utf-8'
       res.end output
 
@@ -130,7 +139,7 @@ describe 'Hotcoffee', ->
       @hotcoffee.formats.should.have.property 'text/mygreatformat'
 
     it 'should overwrite existing formats', ->
-      new_json_format = (res, result)->
+      new_json_format = (res)->
         res.end 'lala'
       formats =
         'json': new_json_format
@@ -226,13 +235,14 @@ describe 'Hotcoffee', ->
         done err
       @req.send 'hello=world'
 
-  describe 'mapResult(res, result)', ->
+  describe 'mapResult(res)', ->
 
     it 'should execute the right format function from HTTP accept header', ->
       @mygreatformat.reset()
       @hotcoffee.accept @format
       @res.req.headers['accept'] = 'text/mygreatformat'
-      @hotcoffee.mapResult @res, @hotcoffee.db.resource1
+      @res.result = @hotcoffee.db.resource1
+      @hotcoffee.mapResult @res
       @mygreatformat.calledOnce.should.be.ok
 
     it 'should execute the right format function from file extension', ->
@@ -257,6 +267,7 @@ describe 'Hotcoffee', ->
       resource = 'resource1'
       @req.url = '/' + resource
       output = toOutput @hotcoffee.db[resource], @res.endpoint + @req.url
+
       @hotcoffee.onGET @req, @res
       @res.end.calledOnce.should.be.ok
       @res.end.calledWith(output).should.be.ok
@@ -294,8 +305,8 @@ describe 'Hotcoffee', ->
     it 'should response an empty array if resource name is empty', (done)->
       @req.url = "/"
       output = toOutput [], @res.endpoint + @req.url
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.be.empty
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.be.empty
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
@@ -334,8 +345,8 @@ describe 'Hotcoffee', ->
       resource = 'turtle'
       @req.url = "/#{resource}"
       output = toOutput [], @res.endpoint + @req.url
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.be.empty
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.be.empty
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
@@ -347,8 +358,8 @@ describe 'Hotcoffee', ->
       key = 'id'
       value = 2
       @req.url = "/#{resource}/#{key}/#{value}"
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.have.lengthOf 1
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.have.lengthOf 1
         output = toOutput (@hotcoffee.db[resource].filter (x)-> String(x.props[key])==String(value)), @res.endpoint + @req.url
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
@@ -364,9 +375,9 @@ describe 'Hotcoffee', ->
       key = 'id'
       value = 2
       @req.url = "/#{resource}/#{key}/#{value}"
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.have.lengthOf 1
-        result[0].links.should.eql @links
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.have.lengthOf 1
+        res.result[0].links.should.eql @links
         done null
       # simulate body parser
       @req.body =
@@ -378,8 +389,8 @@ describe 'Hotcoffee', ->
       resource = 'does_not_exist'
       @req.url = "/#{resource}"
       output = toOutput [], @res.endpoint + @req.url
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.be.empty
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.be.empty
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
@@ -406,10 +417,10 @@ describe 'Hotcoffee', ->
       @hotcoffee.db[resource].should.have.lengthOf 3
       @req.url = "/#{resource}"
       output = toOutput @hotcoffee.db[resource], @res.endpoint + @req.url
-      @hotcoffee.on 'render', (res, result)=>
+      @hotcoffee.on 'render', (res)=>
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
-        should(@hotcoffee.db[resource]).not.be.ok
+        @hotcoffee.db[resource].should.be.empty
         done null
       @hotcoffee.onDELETE @req, @res
 
@@ -417,8 +428,8 @@ describe 'Hotcoffee', ->
       resource = 'turtles'
       @req.url = "/#{resource}"
       output = toOutput [], @res.endpoint + @req.url
-      @hotcoffee.on 'render', (res, result)=>
-        result.should.be.empty
+      @hotcoffee.on 'render', (res)=>
+        res.result.should.be.empty
         @res.end.calledOnce.should.be.ok
         @res.end.calledWith(output).should.be.ok
         done null
