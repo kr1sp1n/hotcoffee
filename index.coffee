@@ -108,7 +108,7 @@ class Hotcoffee extends EventEmitter
     req.on 'end', ->
       if contentType == 'application/json'
         body = JSON.parse body
-      else
+      if contentType == 'application/x-www-form-urlencoded'
         body = qs.parse body
         for k, v of body
           try
