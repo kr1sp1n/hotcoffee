@@ -104,15 +104,19 @@ class Hotcoffee extends EventEmitter
     return result
 
   parseBody: (req, res, next)->
+    contentType = req.headers['content-type']
     body = ''
     req.on 'data', (data)->
       body += data
     req.on 'end', ->
-      body = qs.parse body
-      for k, v of body
-        try
-          body[k] = JSON.parse v
-        catch error
+      if contentType == 'application/json'
+        body = JSON.parse body
+      if contentType == 'application/x-www-form-urlencoded'
+        body = qs.parse body
+        for k, v of body
+          try
+            body[k] = JSON.parse v
+          catch error
       req.body = body
       next null, body
 

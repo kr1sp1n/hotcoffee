@@ -230,6 +230,7 @@ describe 'Hotcoffee', ->
   describe 'parseBody(req, done)', ->
 
     it 'should parse the body of a req stream to an object', (done)->
+      @req.headers['content-type'] = 'application/x-www-form-urlencoded'
       @hotcoffee.parseBody @req, @res, (err, body)=>
         body.should.have.property 'hello', 'world'
         done err
