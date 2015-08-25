@@ -85,6 +85,9 @@ class Hotcoffee extends EventEmitter
   writeHead: (res)->
     res.setHeader 'Access-Control-Allow-Origin', '*'
 
+  register: (resource)->
+    @db[resource] = []
+
   parseURL: (url)->
     x = URL.parse(url).pathname.split('/')
     x.shift() # remove first empty string element
@@ -234,10 +237,11 @@ class Hotcoffee extends EventEmitter
           @emit 'error', err
         @emit 'request', req, res
 
-  start: ->
+  start: (done)->
     @server.listen @config.port, =>
       @log.info {port: @config.port}, "server started"
       @emit 'start'
+      done() if done?
     return @
 
   stop: ->
