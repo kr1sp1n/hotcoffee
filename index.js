@@ -1,2 +1,3 @@
-require("coffee-script/register");
-module.exports = require(__dirname + "/index.coffee");
+const config = require('./config')();
+const server = require('./src/server')(config);
+server.start();
